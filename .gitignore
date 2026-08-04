@@ -1,0 +1,25 @@
+# Dependências e builds do frontend
+app/node_modules/
+app/dist/
+app/.vite/
+
+# Artefatos Rust e Tauri
+app/src-tauri/target/
+app/src-tauri/binaries/
+
+# Configurações e logs locais
+.env
+.env.*
+!.env.example
+*.log
+*.tmp
+
+# Arquivos temporários de verificação
+.toolchain-probe.*
+
+# Arquivo pessoal que não deve ser versionado
+senha-microsoft.pdf
+
+# Arquivos gerados pelo Windows
+Thumbs.db
+desktop.ini
