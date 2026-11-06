@@ -63,11 +63,13 @@ Checkpoint: desenhar o caminho de um job concluído e de um cancelado.
 
 ## Critérios de aceite
 
+A fila do Rust já recebe Imagens, Vídeo, Áudio e downloads individuais. O WebView recebe atualizações por canal, com cancelamento por identificador. Em imagens, o cancelamento preserva os arquivos gravados e descarta o temporário antes da publicação. Em processos externos, o Windows Job Object encerra os processos associados ao fechar seu handle. Stdout e stderr são drenados em paralelo com captura limitada. A lista global, as ações de repetir e remover e os testes de árvore descendente ainda fazem parte da fase.
+
 - [ ] Transições inválidas são impossíveis ou retornam erro.
-- [ ] Fila continua após falha.
-- [ ] Progresso não regride visualmente.
-- [ ] Cancelamento repetido não causa pânico nem apaga arquivo incorreto.
-- [ ] ProcessRunner nunca usa concatenação de shell.
+- [x] Fila continua após falha.
+- [x] Progresso não regride visualmente.
+- [x] Cancelamento repetido não causa pânico nem apaga arquivo incorreto.
+- [x] ProcessRunner nunca usa concatenação de shell.
 - [ ] Testes de corrida principais passam repetidamente.
 - [ ] UI representa todos os estados.
 - [ ] O usuário aprovou avançar.

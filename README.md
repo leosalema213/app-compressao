@@ -1,8 +1,19 @@
-# MediaToolkit
+# LpsToolkit
 
 Aplicativo desktop local para processamento de imagens, vídeo e áudio e para download de mídias, construído com Tauri 2, React, TypeScript e Rust.
 
-O projeto está inicialmente na fase de planejamento. O documento original permanece em `MediaToolkit_-_Planejamento.docx`; o plano executável e versionável está em [`docs/README.md`](docs/README.md).
+O planejamento e o estado atual do projeto estão em [`docs/README.md`](docs/README.md).
+
+## Preview para Windows
+
+Em [GitHub Releases](https://github.com/leosalema213/app-compressao/releases), abra a versão de preview e baixe o arquivo `_x64-setup.exe` em **Assets**. O instalador é para Windows 10/11 x64. Para atualizar durante o preview, baixe e execute o instalador da versão mais recente.
+
+- **Imagens** — Comprima, redimensione e converta lotes de JPEG, PNG e WebP, com previsão da saída e preservação dos originais.
+- **Vídeo e áudio** — Consulte metadados, gere MP4 com perfis de compressão, converta WAV em MP3 e extraia MP3 de um vídeo. Essas funções usam FFmpeg e FFprobe disponíveis no PATH.
+- **Downloader** — Consulte opções e baixe MP4, MP3, miniaturas PNG e legendas WebVTT quando a fonte oferecer esses formatos. Playlists de até 20 itens exigem confirmação. Esta função também usa yt-dlp no PATH. Algumas fontes exigem um runtime JavaScript.
+- **Preferências** — Troque o tema e a cor de destaque pelo cabeçalho e defina uma pasta padrão. Acompanhe o progresso e cancele tarefas em execução.
+
+O preview usa o assistente padrão em português, por usuário. As ferramentas externas são instaladas separadamente. Use o Downloader em mídias que você tem autorização para baixar.
 
 ## Decisões já confirmadas
 

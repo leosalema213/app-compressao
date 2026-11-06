@@ -63,13 +63,15 @@ Checkpoint: diferenciar contêiner MP4 de codec H.264, por exemplo.
 
 ## Critérios de aceite
 
-- [ ] Diagnóstico detecta ferramentas ausentes/incompatíveis.
-- [ ] FFprobe gera metadados internos estáveis.
-- [ ] Presets geram somente argumentos aprovados.
-- [ ] Conversão/compressão de vídeo funciona nas fixtures acordadas.
-- [ ] Conversão e extração de áudio funcionam.
+O build de desenvolvimento identificado é FFmpeg e FFprobe 9.0.1 full build compartilhado, distribuído pelo pacote `Gyan.FFmpeg.Shared` do WinGet. A inspeção do projeto usa caminhos locais e JSON do FFprobe com demuxers permitidos. Vídeo gera MP4 H.264/AAC com perfis Rápido, Equilibrado e Menor arquivo. Áudio gera MP3 de 128 kb/s e aceita extração da primeira faixa de um vídeo. As saídas são validadas e publicadas sem sobrescrita. O teste no Tauri cobriu MP4 com e sem áudio, WAV para MP3, extração, extensão enganosa e nomes Unicode.
+
+- [x] Diagnóstico detecta ferramentas ausentes/incompatíveis.
+- [x] FFprobe gera metadados internos estáveis.
+- [x] Presets geram somente argumentos aprovados.
+- [x] Conversão/compressão de vídeo funciona nas fixtures acordadas.
+- [x] Conversão e extração de áudio funcionam.
 - [ ] Progresso e cancelamento funcionam pela fila.
-- [ ] Saída é validada antes do nome final.
+- [x] Saída é validada antes do nome final.
 - [ ] Licença/origem do build de desenvolvimento foi registrada.
 - [ ] O usuário aprovou avançar.
 

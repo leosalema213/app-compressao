@@ -15,6 +15,7 @@
 - Execute os testes proporcionais ao bloco e mostre o resultado de forma resumida.
 - Termine cada bloco com uma pergunta de verificação de entendimento.
 - Não avance ao próximo bloco ou fase sem confirmação explícita do usuário.
+- Quando o usuário autorizar execução contínua, trate essa autorização como permissão para seguir pelos blocos e documente os checkpoints. Agrupe os resultados e só interrompa por uma decisão, permissão ou ação que dependa dele.
 
 ## Qualidade e segurança
 
@@ -22,6 +23,7 @@
 - O frontend não executa FFmpeg, yt-dlp ou outros binários diretamente; ele chama comandos Rust com dados tipados.
 - Valide extensões, formato real, caminhos de entrada/saída e colisões antes de escrever arquivos.
 - Testes devem acompanhar comportamento novo ou correção de bug sempre que viável.
+- O agente executa os testes e as verificações que estiverem ao seu alcance. Solicite intervenção do usuário apenas quando uma etapa depender dele.
 - Antes de concluir um bloco, rode formatação, análise estática, testes relevantes e build quando o risco justificar.
 - Não declare uma fase concluída enquanto seus critérios de aceite não estiverem satisfeitos.
 
@@ -31,6 +33,11 @@
 - Registre decisões importantes na seção de decisões do progresso ou em um novo ADR dentro de `docs/decisoes/`.
 - Não marque itens manualmente sem evidência do teste ou validação correspondente.
 - Preserve arquivos e mudanças do usuário não relacionados à tarefa.
+
+## Retenção de releases locais
+
+- Após gerar e verificar com sucesso um instalador local, de preview ou estável, mantenha no máximo duas compilações na pasta de releases: a recém-gerada e a imediatamente anterior, se houver.
+- Antes de remover compilações antigas, verifique os caminhos absolutos resolvidos e limite a limpeza aos artefatos gerados na pasta local de releases. Preserve links, dados pessoais e o histórico publicado, incluindo tags e Releases remotas.
 
 ## Escopo inicial
 

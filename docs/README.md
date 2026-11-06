@@ -23,21 +23,21 @@ Uma fase não é uma única tarefa. Cada fase contém blocos pequenos. Em cada b
 4. Teste automatizado sempre que viável.
 5. Validação manual curta.
 6. Revisão do diff e atualização de `progresso.md`.
-7. Pergunta de entendimento e pausa obrigatória.
+7. Checkpoint de entendimento quando solicitado. A sequência de implementação e validação pode continuar quando o usuário delegar essa condução.
 
 ## Fases
 
 | Fase | Resultado principal | Estado |
 |---|---|---|
-| 00 | Ambiente verificado e repositório preparado | Próxima |
-| 01 | Aplicativo Tauri mínimo compilando e testado | Pendente |
-| 02 | Shell visual e navegação acessível | Pendente |
-| 03 | Contratos Rust/TypeScript e seleção segura de arquivos | Pendente |
-| 04 | Primeiro fluxo completo de imagens | Pendente |
-| 05 | Fila, progresso e cancelamento reutilizáveis | Pendente |
-| 06 | Processamento de vídeo e áudio com FFmpeg | Pendente |
-| 07 | Downloader com yt-dlp | Pendente |
-| 08 | Histórico, configurações, notificações e acabamento | Pendente |
+| 00 | Ambiente verificado e repositório preparado | Concluída |
+| 01 | Aplicativo Tauri mínimo compilando e testado | Concluída |
+| 02 | Shell visual e navegação acessível | Concluída |
+| 03 | Contratos Rust/TypeScript e seleção segura de arquivos | Implementada |
+| 04 | Primeiro fluxo completo de imagens | Implementada, comparativo registrado |
+| 05 | Fila, progresso e cancelamento reutilizáveis | Núcleo integrado |
+| 06 | Processamento de vídeo e áudio com FFmpeg | Fluxo inicial validado |
+| 07 | Downloader com yt-dlp | Em validação |
+| 08 | Histórico, configurações, notificações e acabamento | Preferências iniciadas |
 | 09 | Instalador Windows e pacote compartilhável | Pendente |
 
 ## Referências oficiais

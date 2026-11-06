@@ -69,13 +69,17 @@ O usuário poderá consultar uma URL e iniciar downloads suportados pelo yt-dlp 
 
 ## Critérios de aceite
 
-- [ ] URL inválida não inicia processo.
-- [ ] Consulta não baixa conteúdo.
+O fluxo atual consulta metadados, mostra resoluções MP4 detectadas e oferece MP4, MP3, miniatura PNG e legenda WebVTT quando disponíveis. O diagnóstico mostra yt-dlp, FFmpeg, FFprobe, Node e Deno. O executável de teste é o yt-dlp oficial 2026.10.26, com SHA-256 `f5389d3698ecde4ef06f4e6b1ce0294fe9ac1396228c8990b8d3416d6d177a7d`. Está em `app/src-tauri/target/validacao-local/download-tools`. Para a execução de desenvolvimento, acrescente a pasta ao PATH da sessão que inicia o Tauri. O empacotamento fica para a distribuição.
+
+Playlists têm limite de 20 entradas e exigem a confirmação da quantidade e do destino. Cada item é processado na mesma fila. Cancelar preserva os arquivos já publicados e encerra o processamento restante. A validação com fonte externa autorizada e o teste de cancelamento específico de playlist permanecem pendentes.
+
+- [x] URL inválida não inicia processo.
+- [x] Consulta não baixa conteúdo.
 - [ ] Qualidades disponíveis são apresentadas sem inventar opções.
-- [ ] Download individual, áudio e extras acordados funcionam.
+- [x] Download individual, áudio e extras acordados funcionam em amostras controladas.
 - [ ] Playlist exige confirmação e pode ser cancelada.
-- [ ] Nenhum comando usa shell concatenado.
-- [ ] Dependências e versões aparecem no diagnóstico.
-- [ ] Limites de uso estão visíveis.
+- [x] Nenhum comando usa shell concatenado.
+- [x] Dependências e versões aparecem no diagnóstico.
+- [x] Limites de uso estão visíveis.
 - [ ] O usuário aprovou avançar.
 

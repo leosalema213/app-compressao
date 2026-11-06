@@ -1,14 +1,64 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+mod av_processing;
+mod downloader;
+mod image_processing;
+mod jobs;
+mod media_contract;
+mod media_inspection;
+mod media_probe;
+mod media_tools;
+mod output_plan;
+mod process_runner;
+
+#[derive(serde::Serialize)]
+struct AppDiagnostic {
+    version: String,
+}
+
 #[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+fn get_app_diagnostic(app: tauri::AppHandle) -> AppDiagnostic {
+    AppDiagnostic {
+        version: app.package_info().version.to_string(),
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(image_processing::LastImageOutputFolder::default())
+        .manage(jobs::JobQueue::default())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![
+            get_app_diagnostic,
+            media_inspection::inspect_images,
+            media_inspection::validate_output_folder,
+            output_plan::preview_image_outputs,
+            image_processing::compress_images,
+            image_processing::open_image_output_folder,
+            jobs::cancel_image_job,
+            media_tools::diagnose_media_tools,
+            media_probe::inspect_av_file,
+            av_processing::transcode_av,
+            downloader::inspect_download,
+            downloader::download_media
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AppDiagnostic;
+
+    #[test]
+    fn diagnostic_serializes_version_for_frontend() {
+        let diagnostic = AppDiagnostic {
+            version: "0.1.0".to_owned(),
+        };
+
+        assert_eq!(
+            serde_json::to_value(diagnostic).unwrap(),
+            serde_json::json!({ "version": "0.1.0" })
+        );
+    }
 }

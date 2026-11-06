@@ -1,0 +1,17 @@
+[
+  {
+    "status": "selected",
+    "media": {
+      "kind": "image",
+      "path": "C:\\Mídia\\foto.png",
+      "name": "foto.png",
+      "sizeBytes": 128,
+      "format": "png"
+    }
+  },
+  {
+    "status": "rejected",
+    "path": "C:\\Mídia\\outra.png",
+    "error": { "code": "format_mismatch" }
+  }
+]

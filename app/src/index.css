@@ -1,0 +1,52 @@
+@import "tailwindcss";
+@import "./App.css" layer(base);
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+}
+
+:root {
+  color-scheme: light dark;
+  --canvas: light-dark(#f6f7f9, #101010);
+  --chrome: light-dark(#fcfcfd, #141414);
+  --surface: light-dark(#ffffff, #191919);
+  --text: light-dark(#282938, #ededed);
+  --muted: light-dark(#5e606d, #a4a4a4);
+  --line: light-dark(#e3e4eb, #303030);
+  --error: light-dark(#9b3750, #efa4b3);
+  --palette-purple: #c9b5ff;
+  --palette-blue: #9ec5ff;
+  --palette-green: #a0d8bb;
+  --palette-pink: #f2a7c8;
+  --accent: var(--palette-purple);
+  --accent-light-ink: #55439a;
+  --accent-ink: light-dark(var(--accent-light-ink), var(--accent));
+  --tint: color-mix(in srgb, var(--accent) 23%, var(--surface));
+  --primary: var(--accent-ink);
+  --primary-foreground: light-dark(#ffffff, #191919);
+  --ring: var(--accent-ink);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+:root[data-palette="blue"] {
+  --accent: var(--palette-blue);
+  --accent-light-ink: #244f8b;
+}
+
+:root[data-palette="green"] {
+  --accent: var(--palette-green);
+  --accent-light-ink: #276247;
+}
+
+:root[data-palette="pink"] {
+  --accent: var(--palette-pink);
+  --accent-light-ink: #83335c;
+}

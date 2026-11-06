@@ -58,12 +58,12 @@ Checkpoint: explicar por que os componentes do shadcn passam a fazer parte do no
 
 ## Critérios de aceite
 
-- [ ] `app/` foi criado com React + TypeScript + Tauri 2.
-- [ ] Janela Tauri abre sem erro.
-- [ ] Primeiro comando Rust retorna dado estruturado.
-- [ ] Erro do comando pode ser apresentado sem quebrar a tela.
-- [ ] Tailwind e shadcn/ui funcionam.
-- [ ] Gates frontend e Rust passam.
-- [ ] Lockfiles estão preservados.
-- [ ] O usuário aprovou avançar.
+- [x] `app/` foi criado com React + TypeScript + Tauri 2.
+- [x] Janela Tauri abre sem erro.
+- [x] Primeiro comando Rust retorna dado estruturado.
+- [x] Erro do comando pode ser apresentado sem quebrar a tela.
+- [x] Tailwind e shadcn/ui funcionam.
+- [x] Gates frontend e Rust passam.
+- [x] Lockfiles estão preservados.
+- [x] O usuário aprovou avançar.
 

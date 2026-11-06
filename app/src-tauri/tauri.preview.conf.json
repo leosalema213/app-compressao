@@ -1,0 +1,11 @@
+{
+  "version": "0.1.0-preview.1",
+  "bundle": {
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["PortugueseBR"]
+      }
+    }
+  }
+}

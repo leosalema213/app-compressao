@@ -53,6 +53,7 @@ Resultado: navegação e layout responsivo do aplicativo, ainda sem processament
 - Construir sidebar/topbar, área principal e estados vazios.
 - Criar tokens visuais, temas claro/escuro e componentes essenciais.
 - Tornar navegação utilizável por teclado e com nomes acessíveis.
+- Prototipar no cabeçalho um seletor de cores inspirado no Organon e validar a troca de paleta nos temas claro e escuro.
 - Testar renderização e mudança de rota.
 - Evitar implementar detalhes de todas as telas antes dos fluxos reais.
 
@@ -154,11 +155,36 @@ Resultado: instalador reproduzível e pacote testado em máquina limpa.
 - Fixar versões e hashes dos binários externos.
 - Incluir avisos, licenças e fontes exigidas.
 - Gerar SBOM/lista de dependências quando viável.
+- Validar a retenção de no máximo duas compilações locais após cada build de instalador bem-sucedido, conforme o `AGENTS.md`.
 - Testar instalação, primeira execução, desinstalação e caminhos sem ferramentas de desenvolvimento.
 - Documentar limitações, formatos e procedimento de atualização manual.
 - Assinatura de código e atualização automática permanecem posteriores ao MVP.
 
 Arquivo: [`fases/fase-09-distribuicao.md`](fases/fase-09-distribuicao.md)
+
+## Fila de trabalho para retomar
+
+| Ordem | Tarefa | Evidência esperada |
+|---|---|---|
+| 01.2 | Ligar um diagnóstico Rust tipado ao React por `invoke` | Janela apresenta a resposta e trata falha da chamada |
+| 01.3–01.4 | Preparar os gates de qualidade, Tailwind e shadcn/ui | Checagens passam e os estilos funcionam no WebView |
+| 02.1–02.4 | Adaptar a identidade visual do Organon e montar a navegação do LpsToolkit | Comparação visual em tema claro e escuro, janela estreita e teste por teclado |
+| 03–04 | Validar entradas e saídas e entregar o primeiro fluxo de imagens | Arquivo gerado a partir de uma amostra, com original preservado e colisões tratadas |
+| 05–07 | Entregar fila, vídeo, áudio e Downloader nos blocos de cada fase | Trabalhos mostram progresso, aceitam cancelamento e limpam arquivos parciais |
+| 08 | Persistir configurações e histórico e finalizar os fluxos | Preferências e histórico recuperados após reiniciar |
+| 09 | Prototipar o instalador Windows e preparar preview e publicação | Instalação em Windows limpo, artefato verificado e preview aprovado pelo usuário |
+| Fase própria de atualização | Definir e validar o mecanismo Tauri para reproduzir a experiência de atualização do Organon | Testes de detecção, integridade, consentimento, reinício e preservação de dados |
+
+Cada linha resume uma entrega. A execução e as pausas continuam nos blocos dos arquivos de fase.
+
+## Referência visual e de distribuição
+
+A referência é o Organon em `Documentos/ChatGPT/Pessoal/estudo-desktop`. Na Fase 02, usar `src/density.css`, `src/styles.css`, `src/theme.css`, `src/typography.css` e `src/palettes.css` como fonte dos tokens. A densidade padrão tem sidebar de 200 px, topbar de 48 px, respiro de página de 24 px na horizontal e 18 px na vertical, título de 21 px em Segoe UI e controles de 32 px com fonte de 12 px e ícones de 14 px. Usar as superfícies cinza-neutras do escuro e os acentos suaves de sucesso, erro e progresso. Consultar o Financeiro, `Modal.jsx` e `PopupMenu.jsx` para compor filtros, diálogos e menus. Adaptar os componentes ao React/TypeScript e shadcn/ui do LpsToolkit.
+
+- **Instalação inicial.** Usar o README e `build/installer.nsh` do Organon como referência do assistente em português. Apresentar o app, permitir escolher a pasta, mostrar “Confirmar instalação” e terminar com “Instalado com sucesso” e a opção “Abrir o LpsToolkit agora” desmarcada. Testar os atalhos e a preservação de dados. NSIS é o primeiro candidato do protótipo.
+- **Atualização.** Usar o README e `electron/updates.cjs` como referência de comportamento. Verificar ao abrir e manualmente nas preferências. Oferecer “Depois” e “Baixar atualização”, mostrar progresso e pedir “Atualizar e reiniciar”. Validar origem e integridade do pacote, preservar dados e pasta instalada e reabrir o app após aplicar a atualização em segundo plano. O mecanismo, a assinatura e o canal próprios do LpsToolkit serão decididos na fase de atualização.
+- **Releases.** Seguir o `AGENTS.md` do Organon para fechar o lote. Após a validação técnica e o encerramento dos ajustes, entregar um instalador `MAJOR.MINOR.PATCH-preview.N` com número único. Depois da validação explícita do usuário e da autorização para subir, promover a versão estável, gerar instalador e SHA-256, fazer commit e push, publicar a Release com notas e verificar a distribuição. O canal estável recebe apenas versões finais. Na numeração estável, depois de PATCH 9 sobe-se MINOR, e MAJOR muda por solicitação explícita.
+- **Validação do lote.** Executar as verificações focadas exigidas pelo bloco. Para validações amplas e smoke tests manuais no terminal do usuário, entregar um comando PowerShell copiável com caminho absoluto. Registrar a evidência antes de marcar uma tarefa como concluída.
 
 ## Marcos demonstráveis
 
