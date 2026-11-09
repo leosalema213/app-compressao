@@ -1,13 +1,13 @@
 # Progresso do MediaToolkit
 
-Atualizado em: 2026-11-05
+Atualizado em: 2026-11-09
 
 ## Estado atual
 
-- Status geral: Fases 05–07 com fluxos funcionais em validação. Preferências locais da Fase 08 iniciadas.
-- Próxima fase: [`Fase 08 — Persistência e acabamento`](fases/fase-08-acabamento.md), após registrar a validação restante do Downloader.
-- Próximo bloco: 08.2 — Histórico. Verificar cancelamento de playlist e mídia externa autorizada antes de encerrar a Fase 07.
-- Código do aplicativo: imagens em lote, fila e cancelamento, vídeo MP4, áudio MP3, Downloader e preferências locais.
+- Status geral: 0.1.1 com backup e atualização integrada autorizada para publicação.
+- Próxima fase: [`Fase 09 — Distribuição Windows`](fases/fase-09-distribuicao.md), entrega do atualizador.
+- Próximo bloco: validar aplicação e reinício pela atualização integrada em uma instalação real.
+- Código do aplicativo: imagens em lote, fila, vídeo MP4, áudio MP3, Downloader, preferências com abas, backup JSON e atualização integrada.
 
 ## Decisões confirmadas
 
@@ -80,6 +80,8 @@ Atualizado em: 2026-11-05
 | 2026-11-06 | Feedback do preview — Downloader | 16 testes React, 29 Rust, lint, Clippy e build passaram. O executável mostrou capa e 23 itens, campo de link de 390 px na janela padrão e duas colunas. O lote sintético gravou dois MP3 numerados e preservou um arquivo existente | Preview local `0.1.0-preview.5`. Atalho atualizado e retidos os previews 4 e 5 |
 | 2026-11-06 | Feedback do preview — Central de downloads | 16 testes React, 29 Rust, lint, Clippy e build passaram. O executável pausou uma transferência local, retomou com requisição HTTP parcial e gerou MP4 válido. Consulta pública do YouTube levou 5,8 s na primeira vez e 4 ms em cache | Preview local `0.1.0-preview.6`. Atalho atualizado e retidos os previews 5 e 6 |
 | 2026-11-09 | Entrega 0.1.0 | Usuário validou o lote e autorizou subir. 16 testes React e formatação Rust passaram. Build NSIS x64 em português e abertura da janela final verificados. SHA-256 `84219319053a8c01ff94a84ba58792d439d9be9102b2c6ebba9a87990e76c9fc` | Versão final preparada para [GitHub](https://github.com/leosalema213/app-compressao/releases/tag/v0.1.0). Atualização manual e ferramentas externas instaladas separadamente |
+| 2026-11-09 | Backup e atualização integrada | 18 testes React, 31 Rust, lint, Clippy e build passaram. A cópia isolada mostrou o aviso automático, rejeitou assinatura inválida e baixou um instalador real com assinatura válida. Backup exportado/importado pelo Rust e abas conferidas no WebView2. NSIS assinado gerado em teste | Preview `0.1.1-preview.1`. Atalho conferido. Canal estável aguardando publicação do manifesto. Instalação/reinício real pendentes |
+| 2026-11-09 | Entrega 0.1.1 | Publicação autorizada pelo usuário. Build final gerou instalador, assinatura, checksum e manifesto. SHA-256 `4c6d349a6141e07d548049f870142d6848b9fd97b3a81753e07c8e6486ab1586` | [Release 0.1.1](https://github.com/leosalema213/app-compressao/releases/tag/v0.1.1). A 0.1.0 recebe esta versão manualmente uma vez |
 
 ## Decisões pendentes no momento adequado
 

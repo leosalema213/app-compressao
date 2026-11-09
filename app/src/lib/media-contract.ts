@@ -59,6 +59,20 @@ const errorMessages = {
   download_extra_unavailable:
     "O link não oferece a miniatura ou a legenda solicitada.",
   internal: "Não foi possível concluir a operação. Tente novamente.",
+  invalid_settings_backup:
+    "Este arquivo não é um backup compatível do LpsToolkit.",
+  update_check_failed:
+    "Não foi possível verificar as atualizações. Confira sua conexão e tente novamente.",
+  update_channel_unavailable:
+    "O canal de atualizações ainda não está disponível. Tente novamente mais tarde.",
+  update_not_ready: "Verifique e baixe a atualização antes de instalar.",
+  update_download_failed:
+    "Não foi possível baixar ou verificar a assinatura da atualização. Tente novamente.",
+  update_install_failed:
+    "Não foi possível aplicar a atualização. Tente novamente.",
+  update_jobs_active:
+    "Conclua ou cancele os trabalhos em andamento antes de atualizar.",
+  update_busy: "Uma operação de atualização já está em andamento.",
 };
 
 export interface AppError {

@@ -1,3 +1,4 @@
+mod app_updates;
 mod av_processing;
 mod downloader;
 mod image_processing;
@@ -8,6 +9,7 @@ mod media_probe;
 mod media_tools;
 mod output_plan;
 mod process_runner;
+mod settings_backup;
 
 #[derive(serde::Serialize)]
 struct AppDiagnostic {
@@ -28,6 +30,8 @@ pub fn run() {
         .manage(jobs::JobQueue::default())
         .manage(downloader::DownloadCache::default())
         .manage(downloader::DownloadOutputs::default())
+        .manage(app_updates::AppUpdates::default())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
@@ -45,7 +49,12 @@ pub fn run() {
             av_processing::transcode_av,
             downloader::inspect_download,
             downloader::download_media,
-            downloader::open_download_output
+            downloader::open_download_output,
+            app_updates::check_app_update,
+            app_updates::download_app_update,
+            app_updates::install_app_update,
+            settings_backup::export_settings_backup,
+            settings_backup::import_settings_backup
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

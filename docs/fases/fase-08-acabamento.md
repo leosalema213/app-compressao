@@ -22,6 +22,8 @@ O MediaToolkit guardará preferências e histórico de forma controlada, comunic
 
 O schema v1 guarda tema, cor de destaque e pasta padrão local no WebView. O leitor recupera as chaves de aparência anteriores, valida os valores conhecidos e usa padrões diante de dados inválidos. O botão de restauração limpa a pasta padrão e reaplica Sistema e Roxo. Cada fluxo pode trocar seu destino, e o Rust revalida o caminho no processamento. A política de sufixo numérico continua fixa. Histórico e notificações ficam nos próximos blocos.
 
+O backup JSON de preferências possui identificação do aplicativo e versão de schema. A importação valida o conteúdo antes de oferecer a restauração. Quando a pasta antiga não existe, tema e cor são restaurados e a interface solicita uma nova pasta padrão.
+
 ## Bloco 08.2 — Histórico
 
 - Definir campos mínimos: operação, status, horário, resumo e saída.

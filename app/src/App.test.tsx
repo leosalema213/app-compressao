@@ -25,6 +25,7 @@ test("mostra a versão devolvida pelo comando Rust", async () => {
   });
 
   render(<App />);
+  fireEvent.click(screen.getByRole("tab", { name: "Diagnóstico" }));
   fireEvent.click(
     screen.getByRole("button", { name: "Consultar diagnóstico" }),
   );
@@ -39,6 +40,7 @@ test("mostra um erro e permite tentar novamente se a chamada falhar", async () =
   });
 
   render(<App />);
+  fireEvent.click(screen.getByRole("tab", { name: "Diagnóstico" }));
   const button = screen.getByRole("button", { name: "Consultar diagnóstico" });
   fireEvent.click(button);
 

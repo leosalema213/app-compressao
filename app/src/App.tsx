@@ -126,10 +126,7 @@ function App() {
             ))}
         </section>
       ) : page.path === "#/configuracoes" ? (
-        <>
-          <PreferencesPanel />
-          <Diagnostic />
-        </>
+        <PreferencesPanel diagnostic={<Diagnostic />} />
       ) : page.path === "#/imagens" ? (
         <ImageSelection />
       ) : page.path === "#/video" || page.path === "#/audio" ? (

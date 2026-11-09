@@ -61,39 +61,7 @@ $shortcut.WorkingDirectory = $destination
 $shortcut.Description = "LpsToolkit $version"
 $shortcut.Save()
 
-$builds = Get-ChildItem -LiteralPath $release -Directory | ForEach-Object {
-    $directory = $_
-    if ($_.Name -match $previewPattern) {
-        $baseVersion = [version]$Matches[1]
-        $previewNumber = [long]$Matches[2]
-        Assert-NoLink $_
-        $installer = "LpsToolkit_$($_.Name)_x64-setup.exe"
-        $artifacts = @('LpsToolkit.exe', $installer) | ForEach-Object {
-            Join-Path $directory.FullName $_
-        } | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf }
-        if ($artifacts) {
-            [pscustomobject]@{ Directory = $directory; Artifacts = $artifacts; Base = $baseVersion; Number = $previewNumber }
-        }
-    }
-}
-$older = $builds | Where-Object { $_.Directory.Name -ne $version } |
-    Sort-Object -Property Base,Number -Descending | Select-Object -Skip 1
-foreach ($build in $older) {
-    Assert-NoLink (Get-Item -LiteralPath $release)
-    Assert-NoLink (Get-Item -LiteralPath $build.Directory.FullName)
-    foreach ($artifact in $build.Artifacts) {
-        foreach ($path in @($artifact, "$artifact.sha256")) {
-            if (!(Test-Path -LiteralPath $path -PathType Leaf)) { continue }
-            $file = Get-Item -LiteralPath $path
-            Assert-NoLink $file
-            if ($file.Directory.Parent.FullName -ne $release) { throw 'Artefato fora da pasta de releases.' }
-            Remove-Item -LiteralPath $file.FullName
-        }
-    }
-    if (!(Get-ChildItem -LiteralPath $build.Directory.FullName -Force)) {
-        Remove-Item -LiteralPath $build.Directory.FullName
-    }
-}
+& (Join-Path $PSScriptRoot 'prune-releases.ps1') -CurrentVersion $version
 
 Write-Output "Preview: $exe"
 Write-Output "Atalho: $shortcutPath"

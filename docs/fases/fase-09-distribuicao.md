@@ -55,7 +55,8 @@ Um instalador x64 reproduzível poderá ser compartilhado com amigos e funcionar
 
 - Entregar instalador, hash, notas e licenças.
 - Documentar atualização manual e como coletar diagnóstico.
-- Não habilitar auto-update ou assinatura sem uma fase própria.
+- O bloco de atualização solicitado em 2026-11-09 usa o plugin oficial Tauri e segue a decisão em `docs/decisoes/0001-atualizacoes-e-backup.md`.
+- Gere os artefatos assinados com `scripts/gerar-release.ps1`. Publique instalador, assinatura, checksum e manifesto juntos para ativar o canal estável.
 - Registrar backlog para macOS/Linux somente após estabilidade do Windows.
 
 ## Critérios de aceite

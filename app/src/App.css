@@ -450,6 +450,99 @@
   height: min(54vh, 520px);
 }
 
+.settings-tabs {
+  margin-top: 0;
+}
+
+.settings-tabs button[aria-selected="true"] {
+  border-bottom-color: var(--accent-ink);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.settings-section {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 18px 0 4px;
+}
+
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.backup-confirmation {
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--tint);
+}
+
+.settings-panel .diagnostic {
+  margin-top: 16px;
+}
+
+.app-update-dialog {
+  inset: 0;
+  width: min(440px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  margin: auto;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 12px 36px #0004;
+}
+
+.app-update-dialog::backdrop {
+  background: #0009;
+}
+
+.app-update-dialog h2 {
+  margin-top: 12px;
+  font-size: 19px;
+  font-weight: 650;
+}
+
+.app-update-dialog p,
+.app-update-dialog summary {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.app-update-dialog .settings-actions {
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+.update-notes {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 150px;
+  overflow: auto;
+}
+
+.update-progress {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.update-progress progress {
+  width: 100%;
+  accent-color: var(--accent-ink);
+}
+
 .resize-fields {
   display: flex;
   flex-wrap: wrap;

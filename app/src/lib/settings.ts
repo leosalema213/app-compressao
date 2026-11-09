@@ -11,7 +11,7 @@ export const palettes = [
   { value: "pink", label: "Rosa" },
 ] as const;
 
-interface Settings {
+export interface Settings {
   version: 1;
   theme: (typeof themes)[number]["value"];
   palette: (typeof palettes)[number]["value"];

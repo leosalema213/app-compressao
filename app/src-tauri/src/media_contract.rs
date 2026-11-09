@@ -78,6 +78,14 @@ pub enum ErrorCode {
     DownloadQualityUnavailable,
     DownloadExtraUnavailable,
     Internal,
+    InvalidSettingsBackup,
+    UpdateCheckFailed,
+    UpdateChannelUnavailable,
+    UpdateNotReady,
+    UpdateDownloadFailed,
+    UpdateInstallFailed,
+    UpdateJobsActive,
+    UpdateBusy,
 }
 
 impl From<ErrorCode> for AppError {

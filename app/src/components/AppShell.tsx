@@ -3,6 +3,7 @@ import { HardDrive, Layers3 } from "lucide-react";
 import { pages, type Page } from "@/navigation";
 import { AppearanceControls } from "./AppearanceControls";
 import { DownloadCenter } from "./DownloadCenter";
+import { AppUpdatePrompt } from "./AppUpdates";
 
 export function AppShell({
   page,
@@ -54,6 +55,7 @@ export function AppShell({
           </div>
         </header>
         <main className="workspace-content">{children}</main>
+        <AppUpdatePrompt />
       </div>
     </div>
   );

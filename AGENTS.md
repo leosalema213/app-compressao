@@ -37,6 +37,7 @@
 ## Retenção de releases locais
 
 - Entregue previews locais como executável sem instalação, com versão única e atalho `Testar LpsToolkit.lnk`, usando `scripts/gerar-preview.ps1`. Reserve o instalador para a versão publicada.
+- Para versões finais com atualização integrada, use `scripts/gerar-release.ps1` e publique juntos o instalador, `.sig`, `.sha256` e `latest.json`. A chave privada fica fora do Git. O canal de atualização recebe apenas versões finais.
 - Após gerar e verificar com sucesso uma compilação local, mantenha no máximo duas na pasta de releases: a recém-gerada e a imediatamente anterior, se houver.
 - Antes de remover compilações antigas, verifique os caminhos absolutos resolvidos e limite a limpeza aos artefatos gerados na pasta local de releases. Preserve links, dados pessoais e o histórico publicado, incluindo tags e Releases remotas.
 

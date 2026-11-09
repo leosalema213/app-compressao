@@ -10,7 +10,11 @@ Para testar a compilação local, abra `Testar LpsToolkit.lnk` na raiz do projet
 
 Para gerar outro preview, incremente o número em `app/src-tauri/tauri.preview.conf.json` e execute `scripts/gerar-preview.ps1` no PowerShell. O script atualiza o atalho e mantém os dois previews mais recentes.
 
-Em [GitHub Releases](https://github.com/leosalema213/app-compressao/releases/latest), baixe o arquivo `_x64-setup.exe` em **Assets**. O instalador é para Windows 10/11 x64. Para atualizar, baixe e execute o instalador da versão publicada mais recente. A atualização desta versão é manual.
+Em [GitHub Releases](https://github.com/leosalema213/app-compressao/releases/latest), baixe o arquivo `_x64-setup.exe` em **Assets**. O instalador é para Windows 10/11 x64. A versão 0.1.0 precisa receber a nova versão manualmente uma vez. A partir da versão 0.1.1, o aplicativo verifica atualizações ao abrir e em Configurações → Atualizações. Você escolhe quando baixar e aplicar.
+
+Configurações → Backup permite exportar e restaurar tema, cor e pasta padrão em um arquivo JSON.
+
+Para preparar uma release final com atualização integrada, execute `scripts/gerar-release.ps1` e publique juntos o instalador, `.sig`, `.sha256` e `latest.json`. A assinatura usa a chave privada em `%LOCALAPPDATA%/LpsToolkit/signing/updater.key`, fora do projeto. Guarde uma cópia segura dessa chave para continuar publicando atualizações compatíveis.
 
 - **Imagens** — Comprima, redimensione e converta lotes de JPEG, PNG e WebP, com previsão da saída e preservação dos originais.
 - **Vídeo e áudio** — Consulte metadados, gere MP4 com perfis de compressão, converta WAV em MP3 e extraia MP3 de um vídeo. Essas funções usam FFmpeg e FFprobe disponíveis no PATH.

@@ -38,7 +38,8 @@ pub struct DownloadTransfer {
     pub total_bytes: Option<u64>,
 }
 
-type JobRegistry = Arc<Mutex<HashMap<u64, Arc<Mutex<JobStatus>>>>>;
+type JobStatuses = HashMap<u64, Arc<Mutex<JobStatus>>>;
+type JobRegistry = Arc<Mutex<JobStatuses>>;
 
 #[derive(Default)]
 pub struct JobQueue {
@@ -48,6 +49,21 @@ pub struct JobQueue {
 }
 
 impl JobQueue {
+    pub fn lock_for_update(&self) -> Option<std::sync::MutexGuard<'_, JobStatuses>> {
+        let jobs = self.jobs.try_lock().ok()?;
+        let active = jobs.values().any(|status| {
+            !matches!(
+                *status.lock().unwrap(),
+                JobStatus::Finished | JobStatus::Failed | JobStatus::Cancelled
+            )
+        });
+        if active {
+            None
+        } else {
+            Some(jobs)
+        }
+    }
+
     pub fn register(&self, total: usize, progress: Option<Channel<JobUpdate>>) -> Job {
         let id = self.next_id.fetch_add(1, Ordering::Relaxed) + 1;
         let status = Arc::new(Mutex::new(JobStatus::Queued));
@@ -182,6 +198,20 @@ mod tests {
         let id = job.id;
         drop(job);
         assert!(!queue.jobs.lock().unwrap().contains_key(&id));
+    }
+
+    #[test]
+    fn updater_waits_for_queued_running_and_paused_jobs() {
+        let queue = JobQueue::default();
+        assert!(queue.lock_for_update().is_some());
+        let job = queue.register(1, None);
+        assert!(queue.lock_for_update().is_none());
+        assert!(job.start());
+        assert!(queue.lock_for_update().is_none());
+        assert!(queue.pause(job.id, true));
+        assert!(queue.lock_for_update().is_none());
+        job.finish(JobStatus::Finished, 1);
+        assert!(queue.lock_for_update().is_some());
     }
 
     #[test]
