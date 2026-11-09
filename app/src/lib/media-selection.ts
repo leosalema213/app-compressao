@@ -6,10 +6,11 @@ import type {
   CompressionResult,
   ImageFormat,
   ImageJobUpdate,
+  ImageOptions,
+  ImagePreview,
   MediaDetails,
   MediaInspection,
   PlannedOutput,
-  ResizeBounds,
   StreamKind,
   VideoPreset,
 } from "./media-contract";
@@ -53,11 +54,7 @@ export function previewImageOutputs(
 export function compressImages(
   paths: string[],
   folder: string,
-  options: {
-    resize?: ResizeBounds;
-    format?: ImageFormat;
-    jpegQuality?: number;
-  } = {},
+  options: ImageOptions = {},
   onProgress?: (update: ImageJobUpdate) => void,
 ) {
   const progress = onProgress && new Channel<ImageJobUpdate>(onProgress);
@@ -67,6 +64,10 @@ export function compressImages(
     ...options,
     ...(progress && { progress }),
   });
+}
+
+export function previewImageConversion(path: string, options: ImageOptions) {
+  return invoke<ImagePreview>("preview_image_conversion", { path, ...options });
 }
 
 export function cancelImageJob(id: number) {
@@ -97,12 +98,14 @@ export function transcodeAv(
   kind: StreamKind,
   preset: VideoPreset,
   onProgress: (update: ImageJobUpdate) => void,
+  targetPercent?: number,
 ) {
   return invoke<AvResult>("transcode_av", {
     path,
     folder,
     kind,
     preset,
+    ...(targetPercent !== undefined && { targetPercent }),
     progress: new Channel<ImageJobUpdate>(onProgress),
   });
 }

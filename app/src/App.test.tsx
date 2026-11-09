@@ -103,19 +103,26 @@ test("acompanha voltar e avançar no histórico", async () => {
 
 test("aplica tema e cor de destaque e recupera as escolhas ao reabrir", () => {
   const { unmount } = render(<App />);
-  fireEvent.change(screen.getByRole("combobox", { name: "Tema" }), {
-    target: { value: "dark" },
-  });
+  fireEvent.click(screen.getByRole("button", { name: "Tema" }));
+  fireEvent.click(screen.getByRole("button", { name: "Escuro" }));
   fireEvent.click(screen.getByRole("button", { name: "Azul" }));
   expect(document.documentElement.dataset.theme).toBe("dark");
   expect(document.documentElement.dataset.palette).toBe("blue");
   unmount();
 
   render(<App />);
+  fireEvent.click(screen.getByRole("button", { name: "Tema" }));
   expect(
     screen.getByRole("button", { name: "Azul" }).getAttribute("aria-pressed"),
   ).toBe("true");
   expect(
-    screen.getByRole<HTMLSelectElement>("combobox", { name: "Tema" }).value,
-  ).toBe("dark");
+    screen.getByRole("button", { name: "Escuro" }).getAttribute("aria-pressed"),
+  ).toBe("true");
+  fireEvent.keyDown(screen.getByRole("button", { name: "Escuro" }), {
+    key: "Escape",
+  });
+  expect(screen.queryByRole("button", { name: "Azul" })).toBeNull();
+  expect(document.activeElement).toBe(
+    screen.getByRole("button", { name: "Tema" }),
+  );
 });

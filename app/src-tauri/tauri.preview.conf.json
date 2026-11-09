@@ -1,5 +1,6 @@
 {
-  "version": "0.1.0-preview.1",
+  "version": "0.1.0-preview.6",
+  "identifier": "com.lpstoolkit.preview",
   "bundle": {
     "windows": {
       "nsis": {

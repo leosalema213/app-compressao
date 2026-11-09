@@ -42,7 +42,7 @@ O MediaToolkit será um aplicativo desktop local que reúne operações comuns d
 
 - Consultar metadados de uma URL antes do download.
 - Selecionar qualidade de vídeo ou somente áudio.
-- Baixar item único ou playlist com confirmação explícita.
+- Baixar item único ou playlist com quantidade visível e opção de nome base.
 - Baixar miniatura e legendas quando disponíveis.
 - Escolher pasta de saída.
 - Exibir progresso e permitir cancelamento.

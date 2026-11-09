@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { HardDrive, Layers3 } from "lucide-react";
 import { pages, type Page } from "@/navigation";
 import { AppearanceControls } from "./AppearanceControls";
+import { DownloadCenter } from "./DownloadCenter";
 
 export function AppShell({
   page,
@@ -47,7 +48,10 @@ export function AppShell({
             Ferramentas <span aria-hidden="true">/</span>{" "}
             <strong>{page?.label ?? "Página desconhecida"}</strong>
           </span>
-          <AppearanceControls />
+          <div className="topbar-controls">
+            <DownloadCenter />
+            <AppearanceControls />
+          </div>
         </header>
         <main className="workspace-content">{children}</main>
       </div>

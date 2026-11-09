@@ -6,6 +6,8 @@ app/.vite/
 # Artefatos Rust e Tauri
 app/src-tauri/target/
 app/src-tauri/binaries/
+/release/
+/Testar LpsToolkit.lnk
 
 # Configurações e logs locais
 .env

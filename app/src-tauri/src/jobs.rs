@@ -13,6 +13,7 @@ use tauri::{async_runtime::Mutex as AsyncMutex, ipc::Channel};
 pub enum JobStatus {
     Queued,
     Running,
+    Paused,
     Cancelling,
     Finished,
     Failed,
@@ -26,6 +27,15 @@ pub struct JobUpdate {
     pub status: JobStatus,
     pub completed: usize,
     pub total: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transfer: Option<DownloadTransfer>,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadTransfer {
+    pub downloaded_bytes: u64,
+    pub total_bytes: Option<u64>,
 }
 
 type JobRegistry = Arc<Mutex<HashMap<u64, Arc<Mutex<JobStatus>>>>>;
@@ -59,12 +69,24 @@ impl JobQueue {
         let Some(status) = status else { return false };
         let mut status = status.lock().unwrap();
         match *status {
-            JobStatus::Queued | JobStatus::Running | JobStatus::Cancelling => {
+            JobStatus::Queued | JobStatus::Running | JobStatus::Paused | JobStatus::Cancelling => {
                 *status = JobStatus::Cancelling;
                 true
             }
             _ => false,
         }
+    }
+
+    fn pause(&self, id: u64, paused: bool) -> bool {
+        let status = self.jobs.lock().unwrap().get(&id).cloned();
+        let Some(status) = status else { return false };
+        let mut status = status.lock().unwrap();
+        match (*status, paused) {
+            (JobStatus::Running, true) => *status = JobStatus::Paused,
+            (JobStatus::Paused, false) => *status = JobStatus::Running,
+            _ => return false,
+        }
+        true
     }
 }
 
@@ -78,6 +100,14 @@ pub struct Job {
 }
 
 impl Job {
+    pub fn id(&self) -> u64 {
+        self.id
+    }
+
+    pub fn paused(&self) -> bool {
+        *self.status.lock().unwrap() == JobStatus::Paused
+    }
+
     pub fn start(&self) -> bool {
         let mut status = self.status.lock().unwrap();
         if *status != JobStatus::Queued {
@@ -94,6 +124,10 @@ impl Job {
     }
 
     pub fn publish(&self, completed: usize) {
+        self.publish_transfer(completed, None);
+    }
+
+    pub fn publish_transfer(&self, completed: usize, transfer: Option<DownloadTransfer>) {
         let completed = completed.max(self.completed.fetch_max(completed, Ordering::Relaxed));
         if let Some(progress) = &self.progress {
             let status = *self.status.lock().unwrap();
@@ -102,6 +136,7 @@ impl Job {
                 status,
                 completed,
                 total: self.total,
+                transfer,
             });
         }
     }
@@ -110,6 +145,11 @@ impl Job {
         *self.status.lock().unwrap() = status;
         self.publish(completed);
     }
+}
+
+#[tauri::command]
+pub fn pause_download_job(queue: tauri::State<'_, JobQueue>, id: u64, paused: bool) -> bool {
+    queue.pause(id, paused)
 }
 
 impl Drop for Job {

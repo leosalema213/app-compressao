@@ -26,6 +26,8 @@ pub fn run() {
     tauri::Builder::default()
         .manage(image_processing::LastImageOutputFolder::default())
         .manage(jobs::JobQueue::default())
+        .manage(downloader::DownloadCache::default())
+        .manage(downloader::DownloadOutputs::default())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
@@ -34,13 +36,16 @@ pub fn run() {
             media_inspection::validate_output_folder,
             output_plan::preview_image_outputs,
             image_processing::compress_images,
+            image_processing::preview_image_conversion,
             image_processing::open_image_output_folder,
             jobs::cancel_image_job,
+            jobs::pause_download_job,
             media_tools::diagnose_media_tools,
             media_probe::inspect_av_file,
             av_processing::transcode_av,
             downloader::inspect_download,
-            downloader::download_media
+            downloader::download_media,
+            downloader::open_download_output
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

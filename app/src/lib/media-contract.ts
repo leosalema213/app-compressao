@@ -7,6 +7,8 @@ export interface SelectedMedia {
   name: string;
   sizeBytes: number;
   format: ImageFormat;
+  thumbnail?: string;
+  dimensions?: [number, number];
 }
 
 const errorMessages = {
@@ -39,18 +41,23 @@ const errorMessages = {
   unsupported_media_extension:
     "Este formato de vídeo ou áudio ainda não é aceito.",
   av_processing_failed: "O FFmpeg não conseguiu gerar o arquivo.",
+  video_target_unavailable:
+    "Para definir um tamanho-alvo, use um vídeo com duração conhecida e uma porcentagem de 1 a 100.",
+  video_target_too_small:
+    "O tamanho-alvo é pequeno demais para este vídeo. Aumente a porcentagem ou use um perfil.",
   process_timed_out: "O processamento excedeu o tempo limite.",
   invalid_download_url: "Informe uma URL HTTP ou HTTPS sem credenciais.",
-  downloader_missing: "O yt-dlp não foi encontrado no PATH.",
+  downloader_missing:
+    "O yt-dlp não foi encontrado. Instale o yt-dlp oficial para consultar links.",
   download_failed: "Não foi possível consultar ou baixar a mídia.",
-  download_unsupported: "Use mídia gravada ou playlists com até 20 itens.",
-  download_not_authorized: "Confirme que você tem autorização para baixar.",
+  download_output_open_failed:
+    "Não foi possível abrir a pasta ou o arquivo baixado.",
+  download_unsupported:
+    "Use mídia gravada ou uma playlist com itens disponíveis.",
   download_quality_unavailable:
     "A qualidade selecionada não está mais disponível.",
   download_extra_unavailable:
     "O link não oferece a miniatura ou a legenda solicitada.",
-  download_playlist_confirmation:
-    "Confira novamente a quantidade de itens e confirme a playlist.",
   internal: "Não foi possível concluir a operação. Tente novamente.",
 };
 
@@ -70,6 +77,23 @@ export interface PlannedOutput {
 export interface ResizeBounds {
   width?: number;
   height?: number;
+  percent?: number;
+  exact?: boolean;
+}
+
+export interface ImageOptions {
+  resize?: ResizeBounds;
+  format?: ImageFormat;
+  jpegQuality?: number;
+}
+
+export interface ImagePreview {
+  inputBytes: number;
+  outputBytes: number;
+  width: number;
+  height: number;
+  original: string;
+  output: string;
 }
 
 export type CompressionResult =
@@ -88,9 +112,16 @@ export type CompressionResult =
 export interface ImageJobUpdate {
   id: number;
   status:
-    "queued" | "running" | "cancelling" | "finished" | "failed" | "cancelled";
+    | "queued"
+    | "running"
+    | "paused"
+    | "cancelling"
+    | "finished"
+    | "failed"
+    | "cancelled";
   completed: number;
   total: number;
+  transfer?: { downloadedBytes: number; totalBytes: number | null };
 }
 
 export type StreamKind = "video" | "audio";
@@ -111,6 +142,12 @@ export interface MediaDetails {
   audioCodec: string | null;
   width: number | null;
   height: number | null;
+}
+
+export function displaySize(bytes: number) {
+  const unit = bytes >= 1024 ** 2 ? "MB" : bytes >= 1024 ? "KB" : "bytes";
+  const divisor = unit === "MB" ? 1024 ** 2 : unit === "KB" ? 1024 : 1;
+  return `${(bytes / divisor).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} ${unit}`;
 }
 
 export function mediaErrorMessage(error: unknown): string {

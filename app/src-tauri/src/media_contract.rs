@@ -22,6 +22,10 @@ pub struct SelectedMedia {
     pub name: String,
     pub size_bytes: u64,
     pub format: ImageFormat,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thumbnail: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dimensions: Option<[u32; 2]>,
 }
 
 #[derive(Serialize)]
@@ -63,15 +67,16 @@ pub enum ErrorCode {
     MediaStreamMissing,
     UnsupportedMediaExtension,
     AvProcessingFailed,
+    VideoTargetUnavailable,
+    VideoTargetTooSmall,
     ProcessTimedOut,
     InvalidDownloadUrl,
     DownloaderMissing,
     DownloadFailed,
+    DownloadOutputOpenFailed,
     DownloadUnsupported,
-    DownloadNotAuthorized,
     DownloadQualityUnavailable,
     DownloadExtraUnavailable,
-    DownloadPlaylistConfirmation,
     Internal,
 }
 
@@ -90,6 +95,8 @@ mod tests {
         let response = [
             MediaInspection::Selected {
                 media: SelectedMedia {
+                    thumbnail: None,
+                    dimensions: None,
                     kind: MediaKind::Image,
                     path: r"C:\Mídia\foto.png".to_owned(),
                     name: "foto.png".to_owned(),

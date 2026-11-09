@@ -55,7 +55,8 @@ O usuário poderá consultar uma URL e iniciar downloads suportados pelo yt-dlp 
 ## Bloco 07.6 — Playlists
 
 - Detectar playlist e mostrar quantidade/título quando disponíveis.
-- Solicitar confirmação explícita com destino e estimativa.
+- Mostrar a capa da playlist ou a primeira capa disponível entre seus itens.
+- Permitir nome base opcional, com numeração pela posição na playlist.
 - Permitir item único quando a URL também representa playlist.
 - Representar progresso geral e por item.
 - Cancelar sem iniciar itens restantes.
@@ -71,13 +72,15 @@ O usuário poderá consultar uma URL e iniciar downloads suportados pelo yt-dlp 
 
 O fluxo atual consulta metadados, mostra resoluções MP4 detectadas e oferece MP4, MP3, miniatura PNG e legenda WebVTT quando disponíveis. O diagnóstico mostra yt-dlp, FFmpeg, FFprobe, Node e Deno. O executável de teste é o yt-dlp oficial 2026.10.26, com SHA-256 `f5389d3698ecde4ef06f4e6b1ce0294fe9ac1396228c8990b8d3416d6d177a7d`. Está em `app/src-tauri/target/validacao-local/download-tools`. Para a execução de desenvolvimento, acrescente a pasta ao PATH da sessão que inicia o Tauri. O empacotamento fica para a distribuição.
 
-Playlists têm limite de 20 entradas e exigem a confirmação da quantidade e do destino. Cada item é processado na mesma fila. Cancelar preserva os arquivos já publicados e encerra o processamento restante. A validação com fonte externa autorizada e o teste de cancelamento específico de playlist permanecem pendentes.
+Playlists exibem a quantidade retornada pela consulta e podem ser baixadas ao clicar em Baixar playlist com uma pasta selecionada. Cada item é processado na mesma fila. Cancelar preserva os arquivos já publicados e encerra o processamento restante.
+
+A pasta é escolhida no clique em Baixar. A central do cabeçalho acompanha os downloads da sessão em qualquer tela, mostra bytes e porcentagem quando reportados e permite pausar, retomar, cancelar e abrir a pasta. O card de conclusão oferece abertura do arquivo em downloads individuais. A pausa preserva o estágio temporário e pede retomada ao yt-dlp. A consulta mantém em memória os metadados mais recentes por três minutos para evitar repetir a leitura antes do download.
 
 - [x] URL inválida não inicia processo.
 - [x] Consulta não baixa conteúdo.
 - [ ] Qualidades disponíveis são apresentadas sem inventar opções.
 - [x] Download individual, áudio e extras acordados funcionam em amostras controladas.
-- [ ] Playlist exige confirmação e pode ser cancelada.
+- [ ] Cancelamento de playlist preserva as saídas já gravadas em teste integrado.
 - [x] Nenhum comando usa shell concatenado.
 - [x] Dependências e versões aparecem no diagnóstico.
 - [x] Limites de uso estão visíveis.

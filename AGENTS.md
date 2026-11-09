@@ -36,7 +36,8 @@
 
 ## Retenção de releases locais
 
-- Após gerar e verificar com sucesso um instalador local, de preview ou estável, mantenha no máximo duas compilações na pasta de releases: a recém-gerada e a imediatamente anterior, se houver.
+- Entregue previews locais como executável sem instalação, com versão única e atalho `Testar LpsToolkit.lnk`, usando `scripts/gerar-preview.ps1`. Reserve o instalador para a versão publicada.
+- Após gerar e verificar com sucesso uma compilação local, mantenha no máximo duas na pasta de releases: a recém-gerada e a imediatamente anterior, se houver.
 - Antes de remover compilações antigas, verifique os caminhos absolutos resolvidos e limite a limpeza aos artefatos gerados na pasta local de releases. Preserve links, dados pessoais e o histórico publicado, incluindo tags e Releases remotas.
 
 ## Escopo inicial

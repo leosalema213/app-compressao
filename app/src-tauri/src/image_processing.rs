@@ -4,6 +4,7 @@ use crate::{
     media_inspection::{inspect_folder, inspect_image},
     output_plan::{next_available_name, output_name},
 };
+use base64::{engine::general_purpose::STANDARD, Engine};
 use image::{
     codecs::{
         jpeg::{JpegDecoder, JpegEncoder},
@@ -31,15 +32,33 @@ const MAX_PIXELS: u64 = 40_000_000;
 const JPEG_QUALITY: u8 = 80;
 const MAX_RESIZE_EDGE: u32 = 16_384;
 
-#[derive(Deserialize, Clone, Copy)]
+#[derive(Default, Deserialize, Clone, Copy)]
 pub struct ResizeBounds {
     width: Option<u32>,
     height: Option<u32>,
+    percent: Option<u32>,
+    #[serde(default)]
+    exact: bool,
 }
 
 impl ResizeBounds {
     fn validate(self) -> Result<(), ErrorCode> {
         let dimensions = [self.width, self.height];
+        if let Some(percent) = self.percent {
+            return if dimensions == [None, None] && !self.exact && (1..=100).contains(&percent) {
+                Ok(())
+            } else {
+                Err(ErrorCode::InvalidResizeBounds)
+            };
+        }
+        if self.exact
+            && match (self.width, self.height) {
+                (Some(width), Some(height)) => u64::from(width) * u64::from(height) > MAX_PIXELS,
+                _ => true,
+            }
+        {
+            return Err(ErrorCode::InvalidResizeBounds);
+        }
         if dimensions.iter().all(Option::is_none)
             || dimensions
                 .into_iter()
@@ -52,13 +71,32 @@ impl ResizeBounds {
     }
 
     fn apply(self, image: DynamicImage) -> DynamicImage {
-        let width = self.width.unwrap_or(image.width()).min(image.width());
-        let height = self.height.unwrap_or(image.height()).min(image.height());
+        let (width, height) = if let Some(percent) = self.percent {
+            let scale = |edge: u32| ((edge * percent + 50) / 100).max(1);
+            (scale(image.width()), scale(image.height()))
+        } else if self.exact {
+            (
+                self.width.unwrap_or(image.width()),
+                self.height.unwrap_or(image.height()),
+            )
+        } else {
+            (
+                self.width.unwrap_or(image.width()).min(image.width()),
+                self.height.unwrap_or(image.height()).min(image.height()),
+            )
+        };
         if (width, height) == (image.width(), image.height()) {
             return image;
         }
+        let resize = |image: &DynamicImage| {
+            if self.exact || self.percent.is_some() {
+                image.resize_exact(width, height, ResizeFilter::Lanczos3)
+            } else {
+                image.resize(width, height, ResizeFilter::Lanczos3)
+            }
+        };
         if !image.has_alpha() {
-            return image.resize(width, height, ResizeFilter::Lanczos3);
+            return resize(&image);
         }
 
         // Resize premultiplied pixels so transparent colors do not bleed into visible edges.
@@ -70,9 +108,7 @@ impl ResizeBounds {
                 *channel = ((u32::from(*channel) * alpha + 32_767) / 65_535) as u16;
             }
         }
-        let mut resized = DynamicImage::ImageRgba16(rgba)
-            .resize(width, height, ResizeFilter::Lanczos3)
-            .into_rgba16();
+        let mut resized = resize(&DynamicImage::ImageRgba16(rgba)).into_rgba16();
         for pixel in resized.pixels_mut() {
             let alpha = u32::from(pixel[3]);
             for channel in &mut pixel.0[..3] {
@@ -177,6 +213,21 @@ struct ImageRsProcessor {
     jpeg_quality: Option<u8>,
 }
 
+impl ImageRsProcessor {
+    fn validate(&self) -> Result<(), ErrorCode> {
+        if let Some(bounds) = self.resize {
+            bounds.validate()?;
+        }
+        if self
+            .jpeg_quality
+            .is_some_and(|quality| !(1..=100).contains(&quality))
+        {
+            return Err(ErrorCode::InvalidJpegQuality);
+        }
+        Ok(())
+    }
+}
+
 impl ImageProcessor for ImageRsProcessor {
     fn output_format(&self, source: ImageFormat) -> ImageFormat {
         self.format.unwrap_or(source)
@@ -188,8 +239,30 @@ impl ImageProcessor for ImageRsProcessor {
         format: ImageFormat,
         output: &mut File,
     ) -> Result<(), ErrorCode> {
-        let image = decode(Path::new(&source.path), source.format)?;
+        self.encode_pixels(
+            decode(Path::new(&source.path), source.format)?,
+            format,
+            output,
+        )
+    }
+}
+
+impl ImageRsProcessor {
+    fn encode_pixels(
+        &self,
+        image: DynamicImage,
+        format: ImageFormat,
+        output: &mut File,
+    ) -> Result<(), ErrorCode> {
         let image = match self.resize {
+            Some(bounds)
+                if bounds.exact
+                    && u64::from(image.width())
+                        * u64::from(bounds.height.unwrap_or(image.height()))
+                        > MAX_PIXELS =>
+            {
+                return Err(ErrorCode::ImageTooLarge);
+            }
             Some(bounds) => bounds.apply(image),
             None => image,
         };
@@ -218,6 +291,72 @@ impl ImageProcessor for ImageRsProcessor {
         .map_err(|_| ErrorCode::OutputWriteFailed)?;
         writer.flush().map_err(|_| ErrorCode::OutputWriteFailed)
     }
+}
+
+pub(crate) fn preview_pixels(image: &DynamicImage, edge: u32) -> Result<String, ErrorCode> {
+    let mut bytes = Vec::new();
+    DynamicImage::ImageRgba8(image.thumbnail(edge, edge).into_rgba8())
+        .write_with_encoder(PngEncoder::new(&mut bytes))
+        .map_err(|_| ErrorCode::OutputWriteFailed)?;
+    Ok(format!("data:image/png;base64,{}", STANDARD.encode(bytes)))
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImagePreview {
+    input_bytes: u64,
+    output_bytes: u64,
+    width: u32,
+    height: u32,
+    original: String,
+    output: String,
+}
+
+#[tauri::command]
+pub async fn preview_image_conversion(
+    path: String,
+    resize: Option<ResizeBounds>,
+    format: Option<ImageFormat>,
+    jpeg_quality: Option<u8>,
+    queue: tauri::State<'_, JobQueue>,
+) -> Result<ImagePreview, AppError> {
+    let processor = ImageRsProcessor {
+        resize,
+        format,
+        jpeg_quality,
+    };
+    processor.validate()?;
+    let execution = queue.execution.clone().lock_owned().await;
+    tauri::async_runtime::spawn_blocking(move || {
+        let _execution = execution;
+        render_preview(Path::new(&path), &processor)
+    })
+    .await
+    .map_err(|_| ErrorCode::Internal)?
+    .map_err(Into::into)
+}
+
+fn render_preview(path: &Path, processor: &ImageRsProcessor) -> Result<ImagePreview, ErrorCode> {
+    let source = inspect_image(path)?;
+    let input = decode(Path::new(&source.path), source.format)?;
+    let original = preview_pixels(&input, 640)?;
+    let format = processor.output_format(source.format);
+    let mut temporary = NamedTempFile::new().map_err(|_| ErrorCode::OutputWriteFailed)?;
+    processor.encode_pixels(input, format, temporary.as_file_mut())?;
+    let output_bytes = temporary
+        .as_file()
+        .metadata()
+        .map_err(|_| ErrorCode::OutputWriteFailed)?
+        .len();
+    let converted = decode(temporary.path(), format).map_err(|_| ErrorCode::OutputWriteFailed)?;
+    Ok(ImagePreview {
+        input_bytes: source.size_bytes,
+        output_bytes,
+        width: converted.width(),
+        height: converted.height(),
+        original,
+        output: preview_pixels(&converted, 640)?,
+    })
 }
 
 fn jpeg_pixels(image: DynamicImage) -> DynamicImage {
@@ -249,12 +388,12 @@ pub async fn compress_images(
     progress: Option<tauri::ipc::JavaScriptChannelId>,
     webview: tauri::Webview,
 ) -> Result<Vec<CompressionResult>, AppError> {
-    if let Some(bounds) = resize {
-        bounds.validate()?;
-    }
-    if jpeg_quality.is_some_and(|quality| !(1..=100).contains(&quality)) {
-        return Err(ErrorCode::InvalidJpegQuality.into());
-    }
+    let processor = ImageRsProcessor {
+        resize,
+        format,
+        jpeg_quality,
+    };
+    processor.validate()?;
     let app = webview.app_handle().clone();
     let queue = app.state::<JobQueue>();
     let job = queue.register(
@@ -271,16 +410,7 @@ pub async fn compress_images(
     }
     let (_, results) = tauri::async_runtime::spawn_blocking(move || {
         let _execution = execution;
-        let batch = process_batch(
-            paths,
-            &folder,
-            &ImageRsProcessor {
-                resize,
-                format,
-                jpeg_quality,
-            },
-            Some(&job),
-        );
+        let batch = process_batch(paths, &folder, &processor, Some(&job));
         match &batch {
             Ok((folder, results)) => {
                 app.state::<LastImageOutputFolder>()
@@ -475,6 +605,7 @@ mod tests {
                     resize: Some(ResizeBounds {
                         width: Some(1600),
                         height: Some(1200),
+                        ..Default::default()
                     }),
                     ..Default::default()
                 },
@@ -610,15 +741,74 @@ mod tests {
             (Some(30), Some(12), (18, 12)),
             (Some(200), Some(200), (96, 64)),
         ] {
-            let bounds = ResizeBounds { width, height };
+            let bounds = ResizeBounds {
+                width,
+                height,
+                ..Default::default()
+            };
             assert_eq!(bounds.validate(), Ok(()));
             let resized = bounds.apply(DynamicImage::new_rgb8(96, 64));
             assert_eq!((resized.width(), resized.height()), expected);
         }
         for (width, height) in [(None, None), (Some(0), Some(1)), (None, Some(16_385))] {
             assert_eq!(
-                ResizeBounds { width, height }.validate(),
+                ResizeBounds {
+                    width,
+                    height,
+                    ..Default::default()
+                }
+                .validate(),
                 Err(ErrorCode::InvalidResizeBounds)
+            );
+        }
+    }
+
+    #[test]
+    fn previews_the_same_bytes_and_dimensions_as_the_saved_conversion() {
+        let inputs = tempfile::tempdir().unwrap();
+        let output = tempfile::tempdir().unwrap();
+        let source = inputs.path().join("sample.png");
+        DynamicImage::new_rgb8(96, 64).save(&source).unwrap();
+        for (resize, dimensions) in [
+            (
+                ResizeBounds {
+                    percent: Some(25),
+                    ..Default::default()
+                },
+                (24, 16),
+            ),
+            (
+                ResizeBounds {
+                    width: Some(30),
+                    height: Some(20),
+                    exact: true,
+                    ..Default::default()
+                },
+                (30, 20),
+            ),
+        ] {
+            let processor = ImageRsProcessor {
+                resize: Some(resize),
+                format: Some(ImageFormat::Jpeg),
+                jpeg_quality: Some(80),
+            };
+            processor.validate().unwrap();
+            let preview = render_preview(&source, &processor).unwrap();
+            assert_eq!((preview.width, preview.height), dimensions);
+            assert!(preview.original.starts_with("data:image/png;base64,"));
+            assert!(preview.output.starts_with("data:image/png;base64,"));
+            let saved = process_image(
+                &source,
+                output.path(),
+                &processor,
+                &mut HashSet::new(),
+                None,
+            )
+            .unwrap();
+            assert!(
+                matches!(saved, CompressionResult::Saved { output_bytes, input_bytes, width, height, .. }
+                if output_bytes == preview.output_bytes && input_bytes == preview.input_bytes
+                    && (width, height) == dimensions)
             );
         }
     }
@@ -629,6 +819,7 @@ mod tests {
         let bounds = ResizeBounds {
             width: Some(1),
             height: None,
+            ..Default::default()
         };
         let resized = bounds.apply(DynamicImage::ImageRgba8(pixels)).into_rgba8();
         let [red, green, blue, alpha] = resized.get_pixel(0, 0).0;
@@ -662,6 +853,7 @@ mod tests {
                 resize: Some(ResizeBounds {
                     width: Some(20),
                     height: None,
+                    ..Default::default()
                 }),
                 ..ImageRsProcessor::default()
             },

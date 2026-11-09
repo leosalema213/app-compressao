@@ -13,7 +13,15 @@ pub async fn inspect_images(paths: Vec<String>) -> Result<Vec<MediaInspection>, 
         paths
             .into_iter()
             .map(|path| match inspect_image(Path::new(&path)) {
-                Ok(media) => MediaInspection::Selected { media },
+                Ok(mut media) => {
+                    if let Ok(image) =
+                        crate::image_processing::decode(Path::new(&media.path), media.format)
+                    {
+                        media.dimensions = Some([image.width(), image.height()]);
+                        media.thumbnail = crate::image_processing::preview_pixels(&image, 96).ok();
+                    }
+                    MediaInspection::Selected { media }
+                }
                 Err(code) => MediaInspection::Rejected {
                     path,
                     error: code.into(),
@@ -70,6 +78,8 @@ pub(crate) fn inspect_image(selected_path: &Path) -> Result<SelectedMedia, Error
         .and_then(|name| name.to_str())
         .ok_or(ErrorCode::InvalidPath)?;
     Ok(SelectedMedia {
+        thumbnail: None,
+        dimensions: None,
         kind: MediaKind::Image,
         name: name.to_owned(),
         path: path_text(&path)?,

@@ -125,7 +125,7 @@ Resultado: consulta e download controlado com yt-dlp.
 - Consultar metadados sem iniciar download.
 - Modelar formatos/qualidades em opções compreensíveis.
 - Implementar vídeo, somente áudio, miniatura e legendas.
-- Implementar playlist com quantidade e confirmação visíveis.
+- Implementar playlist com quantidade, capa quando disponível e nome base opcional.
 - Interpretar progresso por saída estruturada.
 - Cancelar árvore de processos e limpar arquivos parciais quando seguro.
 - Incluir aviso de uso responsável e não implementar DRM/cookies no MVP.
@@ -183,7 +183,7 @@ A referência é o Organon em `Documentos/ChatGPT/Pessoal/estudo-desktop`. Na Fa
 
 - **Instalação inicial.** Usar o README e `build/installer.nsh` do Organon como referência do assistente em português. Apresentar o app, permitir escolher a pasta, mostrar “Confirmar instalação” e terminar com “Instalado com sucesso” e a opção “Abrir o LpsToolkit agora” desmarcada. Testar os atalhos e a preservação de dados. NSIS é o primeiro candidato do protótipo.
 - **Atualização.** Usar o README e `electron/updates.cjs` como referência de comportamento. Verificar ao abrir e manualmente nas preferências. Oferecer “Depois” e “Baixar atualização”, mostrar progresso e pedir “Atualizar e reiniciar”. Validar origem e integridade do pacote, preservar dados e pasta instalada e reabrir o app após aplicar a atualização em segundo plano. O mecanismo, a assinatura e o canal próprios do LpsToolkit serão decididos na fase de atualização.
-- **Releases.** Seguir o `AGENTS.md` do Organon para fechar o lote. Após a validação técnica e o encerramento dos ajustes, entregar um instalador `MAJOR.MINOR.PATCH-preview.N` com número único. Depois da validação explícita do usuário e da autorização para subir, promover a versão estável, gerar instalador e SHA-256, fazer commit e push, publicar a Release com notas e verificar a distribuição. O canal estável recebe apenas versões finais. Na numeração estável, depois de PATCH 9 sobe-se MINOR, e MAJOR muda por solicitação explícita.
+- **Releases.** Seguir o `AGENTS.md` do Organon para fechar o lote. Após a validação técnica e o encerramento dos ajustes, entregar um executável local sem instalação em `release/MAJOR.MINOR.PATCH-preview.N`, com número único e atalho. Depois da validação explícita do usuário e da autorização para subir, promover a versão estável, gerar instalador e SHA-256, fazer commit e push, publicar a Release com notas e verificar a distribuição. O canal estável recebe apenas versões finais. Na numeração estável, depois de PATCH 9 sobe-se MINOR, e MAJOR muda por solicitação explícita.
 - **Validação do lote.** Executar as verificações focadas exigidas pelo bloco. Para validações amplas e smoke tests manuais no terminal do usuário, entregar um comando PowerShell copiável com caminho absoluto. Registrar a evidência antes de marcar uma tarefa como concluída.
 
 ## Marcos demonstráveis

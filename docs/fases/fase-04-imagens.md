@@ -92,6 +92,14 @@ Decisão de implementação: manter `image-rs` no MVP. O WebP já otimizado cres
 
 Para reproduzir, instalar `sharp@0.35.5` em um prefixo temporário, executar `node scripts/benchmark-images.cjs prepare <corpus> <módulo-sharp>`, definir `LPSTOOLKIT_IMAGE_BENCH` para a pasta absoluta do corpus, rodar `cargo test --manifest-path app/src-tauri/Cargo.toml --release --lib benchmark_image_corpus -- --ignored` e executar o script com `compare` e os mesmos caminhos.
 
+## Ajustes do segundo preview
+
+No segundo preview, a tela separa Formato, Redimensionar e Prévia. A lista mostra miniaturas dos arquivos que podem ser decodificados. Além dos limites proporcionais, o redimensionamento aceita porcentagem de 1 a 100 ou resolução exata com ajuste à largura e altura informadas.
+
+No modo porcentagem, o campo numérico e o controle deslizante atualizam as dimensões previstas ao lado de cada imagem da lista.
+
+A prévia processa uma imagem com os mesmos ajustes do lote, mede os bytes gerados e compara o original com a saída em imagens de até 640 px. O arquivo temporário é descartado. Ao alterar os ajustes, gere uma nova prévia.
+
 ## Critérios de aceite
 
 - [x] JPEG, PNG e WebP aprovados nas combinações definidas.

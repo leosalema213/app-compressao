@@ -1,5 +1,7 @@
 # Fase 06 — Vídeo e áudio
 
+O modo de vídeo por tamanho-alvo usa uma porcentagem do arquivo original e mostra o tamanho pretendido antes de processar. A saída MP4 usa codificação em duas passagens, com espaço reservado para áudio e contêiner. O tamanho final pode variar. Os perfis por qualidade continuam disponíveis.
+
 ## Resultado
 
 O MediaToolkit inspecionará, converterá e comprimirá vídeo e converterá/extrairá áudio por FFmpeg, integrado à fila e com cancelamento seguro.

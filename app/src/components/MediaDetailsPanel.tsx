@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { isValidPercent, PercentField } from "@/components/PercentField";
 import { Button } from "@/components/ui/button";
 import { readSettings } from "@/lib/settings";
 import {
+  displaySize,
   mediaErrorMessage,
   type AvResult,
   type ImageJobUpdate,
@@ -24,11 +26,16 @@ export function MediaDetailsPanel({ kind }: { kind: StreamKind }) {
   const [error, setError] = useState("");
   const [folder, setFolder] = useState(() => readSettings().outputFolder);
   const [preset, setPreset] = useState<VideoPreset>("balanced");
+  const [method, setMethod] = useState<"profile" | "target">("profile");
+  const [percent, setPercent] = useState("50");
   const [job, setJob] = useState<ImageJobUpdate | null>(null);
   const [cancelRequested, setCancelRequested] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState<AvResult | null>(null);
   const video = kind === "video";
+  const useTarget = video && method === "target";
+  const validTarget = isValidPercent(percent);
+  const invalidTarget = useTarget && (!validTarget || !media?.durationSeconds);
 
   async function selectFile() {
     setBusy(true);
@@ -61,7 +68,7 @@ export function MediaDetailsPanel({ kind }: { kind: StreamKind }) {
   }
 
   async function processFile() {
-    if (!media || !folder) return;
+    if (!media || !folder || invalidTarget) return;
     setBusy(true);
     setProcessing(true);
     setCancelRequested(false);
@@ -70,9 +77,16 @@ export function MediaDetailsPanel({ kind }: { kind: StreamKind }) {
     let active = true;
     try {
       setResult(
-        await transcodeAv(media.path, folder, kind, preset, (update) => {
-          if (active) setJob(update);
-        }),
+        await transcodeAv(
+          media.path,
+          folder,
+          kind,
+          useTarget ? "balanced" : preset,
+          (update) => {
+            if (active) setJob(update);
+          },
+          useTarget ? Number(percent) : undefined,
+        ),
       );
     } catch (failure) {
       setError(mediaErrorMessage(failure));
@@ -154,27 +168,77 @@ export function MediaDetailsPanel({ kind }: { kind: StreamKind }) {
             : "Saída MP3 a 128 kb/s, incluindo extração de áudio de vídeo."}
         </p>
         {video && (
-          <div className="resize-fields">
-            <label>
-              Perfil de compressão
-              <select
-                disabled={busy}
-                value={preset}
-                onChange={(event) =>
-                  setPreset(event.target.value as VideoPreset)
-                }
-              >
-                <option value="fast">Rápido</option>
-                <option value="balanced">Equilibrado</option>
-                <option value="smaller">Menor arquivo</option>
-              </select>
-            </label>
-          </div>
+          <fieldset disabled={busy} className="mt-3">
+            <legend className="text-xs font-semibold">Compressão</legend>
+            <div className="resize-fields">
+              <label>
+                Método
+                <select
+                  value={method}
+                  onChange={(event) =>
+                    setMethod(event.target.value as typeof method)
+                  }
+                >
+                  <option value="profile">Por perfil</option>
+                  <option value="target">Por tamanho-alvo</option>
+                </select>
+              </label>
+              {!useTarget && (
+                <label>
+                  Perfil de compressão
+                  <select
+                    disabled={busy}
+                    value={preset}
+                    onChange={(event) =>
+                      setPreset(event.target.value as VideoPreset)
+                    }
+                  >
+                    <option value="fast">Rápido</option>
+                    <option value="balanced">Equilibrado</option>
+                    <option value="smaller">Menor arquivo</option>
+                  </select>
+                </label>
+              )}
+            </div>
+            {useTarget && (
+              <>
+                <PercentField
+                  label="Tamanho do original"
+                  value={percent}
+                  onChange={setPercent}
+                />
+                {media && validTarget && (
+                  <p>
+                    Tamanho-alvo aproximado:{" "}
+                    <strong>
+                      {displaySize(
+                        Math.round((media.sizeBytes * Number(percent)) / 100),
+                      )}
+                    </strong>
+                  </p>
+                )}
+                <p>
+                  50% significa tentar gerar um arquivo com metade do tamanho
+                  original.
+                </p>
+                {!validTarget && (
+                  <p className="media-error">
+                    Use uma porcentagem inteira de 1 a 100.
+                  </p>
+                )}
+                {media && !media.durationSeconds && (
+                  <p className="media-error">
+                    O tamanho-alvo precisa de um vídeo com duração conhecida.
+                  </p>
+                )}
+              </>
+            )}
+          </fieldset>
         )}
         <Button
           type="button"
           className="mt-3 h-8 px-3 text-xs"
-          disabled={busy || !media || !folder}
+          disabled={busy || !media || !folder || invalidTarget}
           onClick={processFile}
         >
           {video ? "Gerar MP4" : "Gerar MP3"}

@@ -9,7 +9,7 @@ afterEach(() => {
   clearMocks();
 });
 
-test("exige autorização e confirmação da quantidade antes de baixar uma playlist", async () => {
+test("mostra capa e quantidade, e baixa a playlist com o nome base escolhido", async () => {
   const url = "https://example.com/playlist";
   const folder = "C:\\Saída";
   mockIPC((command, args) => {
@@ -22,21 +22,22 @@ test("exige autorização e confirmação da quantidade antes de baixar uma play
           heights: [],
           has_thumbnail: false,
           subtitle_languages: [],
-          playlist_size: 2,
+          playlist_size: 23,
+          cover_url: "https://example.com/cover.jpg",
         };
       case "plugin:dialog|open":
-      case "validate_output_folder":
         return folder;
       case "download_media":
         expect(args).toMatchObject({
           url,
           folder,
-          kind: "video",
-          authorized: true,
-          options: { confirmedCount: 2 },
+          kind: "audio",
+          options: { namePrefix: "Jazz Wall" },
         });
+        expect(args).not.toHaveProperty("authorized");
+        expect(args).not.toHaveProperty("options.confirmedCount");
         return {
-          files: [{ fileName: "video.mp4", bytes: 123 }],
+          files: [{ fileName: "Jazz Wall 1.mp3", bytes: 123 }],
           failed: 0,
           cancelled: 1,
         };
@@ -46,33 +47,29 @@ test("exige autorização e confirmação da quantidade antes de baixar uma play
   });
 
   render(<DownloaderPanel />);
-  fireEvent.change(screen.getByRole("textbox", { name: "Link" }), {
+  fireEvent.change(screen.getByRole("textbox", { name: "Link da mídia" }), {
     target: { value: url },
   });
   fireEvent.click(screen.getByRole("button", { name: "Consultar link" }));
-  await screen.findByText("Playlist · 2 itens");
+  await screen.findByText("Playlist · 23 itens");
+  expect(
+    document.querySelector(".download-cover img")?.getAttribute("src"),
+  ).toBe("https://example.com/cover.jpg");
   const download = screen.getByRole<HTMLButtonElement>("button", {
     name: "Baixar playlist",
   });
-  expect(download.disabled).toBe(true);
-
-  fireEvent.click(screen.getByRole("button", { name: "Escolher pasta" }));
-  await screen.findByText(folder);
-  fireEvent.click(
-    screen.getByRole("checkbox", {
-      name: "Tenho autorização para baixar esta mídia",
-    }),
+  expect(screen.queryByRole("button", { name: "Escolher pasta" })).toBeNull();
+  fireEvent.change(screen.getByRole("combobox", { name: "Saída" }), {
+    target: { value: "audio" },
+  });
+  fireEvent.change(
+    screen.getByRole("textbox", { name: "Nome base (opcional)" }),
+    { target: { value: "Jazz Wall" } },
   );
-  expect(download.disabled).toBe(true);
-  fireEvent.click(
-    screen.getByRole("checkbox", {
-      name: "Confirmo baixar 2 itens para a pasta selecionada",
-    }),
-  );
+  expect(screen.getByText("Jazz Wall 1.mp3, Jazz Wall 2.mp3…")).toBeTruthy();
+  expect(screen.queryByRole("checkbox")).toBeNull();
   expect(download.disabled).toBe(false);
   fireEvent.click(download);
-  expect(
-    await screen.findByText("1 gravado · 0 falhas · 1 cancelado"),
-  ).toBeTruthy();
-  expect(screen.getByText("video.mp4")).toBeTruthy();
+  expect(await screen.findByText("1 de 23 itens baixados")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Abrir pasta" })).toBeTruthy();
 });

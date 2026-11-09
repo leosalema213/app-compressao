@@ -1,22 +1,79 @@
 use crate::{
-    jobs::{JobQueue, JobStatus, JobUpdate},
+    jobs::{DownloadTransfer, Job, JobQueue, JobStatus, JobUpdate},
     media_contract::{AppError, ErrorCode, ImageFormat},
     media_inspection::{inspect_folder, inspect_image},
     media_probe::{probe_media, StreamKind},
     media_tools::locate,
     output_plan::{next_available_name, with_output_extension},
-    process_runner::{run_process, run_process_streaming, ProcessError},
+    process_runner::{run_process_streaming, run_process_with_limit, ProcessError},
 };
 use serde::{Deserialize, Serialize};
 use std::{
+    cell::Cell,
     collections::{HashMap, HashSet},
     ffi::OsString,
     io::ErrorKind,
     ops::Range,
-    path::Path,
-    time::Duration,
+    path::{Path, PathBuf},
+    sync::{Arc, Mutex},
+    time::{Duration, Instant},
 };
 use tauri::Manager;
+use tauri_plugin_opener::OpenerExt;
+
+type CachedDownload = (tauri::Url, Instant, Arc<DownloadInfo>);
+
+#[derive(Default)]
+pub struct DownloadCache(Mutex<Option<CachedDownload>>);
+
+impl DownloadCache {
+    fn lookup(
+        &self,
+        url: &tauri::Url,
+        cancelled: impl Fn() -> bool,
+    ) -> Result<Arc<DownloadInfo>, ErrorCode> {
+        if let Some((_, _, info)) = self
+            .0
+            .lock()
+            .unwrap()
+            .as_ref()
+            .filter(|(key, time, _)| key == url && time.elapsed() < Duration::from_secs(180))
+        {
+            return Ok(Arc::clone(info));
+        }
+        let info = Arc::new(inspect(url, cancelled)?);
+        *self.0.lock().unwrap() = Some((url.clone(), Instant::now(), Arc::clone(&info)));
+        Ok(info)
+    }
+}
+
+#[derive(Default)]
+pub struct DownloadOutputs(Mutex<HashMap<u64, (PathBuf, Option<PathBuf>)>>);
+
+#[tauri::command]
+pub fn open_download_output(
+    app: tauri::AppHandle,
+    outputs: tauri::State<'_, DownloadOutputs>,
+    id: u64,
+    file: bool,
+) -> Result<(), AppError> {
+    let path = outputs
+        .0
+        .lock()
+        .unwrap()
+        .get(&id)
+        .and_then(|(folder, item)| {
+            if file {
+                item.clone()
+            } else {
+                Some(folder.clone())
+            }
+        })
+        .ok_or(ErrorCode::DownloadOutputOpenFailed)?;
+    app.opener()
+        .open_path(path.to_string_lossy().into_owned(), None::<&str>)
+        .map_err(|_| ErrorCode::DownloadOutputOpenFailed.into())
+}
 
 #[derive(Deserialize, Serialize)]
 pub struct DownloadInfo {
@@ -30,14 +87,16 @@ pub struct DownloadInfo {
     has_thumbnail: bool,
     #[serde(default, skip_deserializing)]
     playlist_size: Option<usize>,
+    #[serde(default, skip_deserializing)]
+    cover_url: Option<String>,
     #[serde(default, skip_serializing)]
     entries: Vec<Option<PlaylistEntry>>,
-    #[serde(skip_serializing)]
-    playlist_count: Option<usize>,
     #[serde(default, skip_serializing)]
     subtitles: HashMap<String, serde_json::Value>,
     #[serde(skip_serializing)]
     thumbnail: Option<String>,
+    #[serde(default, skip_serializing)]
+    thumbnails: Vec<Thumbnail>,
     #[serde(default, skip_serializing)]
     formats: Vec<DownloadFormat>,
     #[serde(rename = "_type", skip_serializing)]
@@ -48,15 +107,43 @@ pub struct DownloadInfo {
 
 #[derive(Deserialize)]
 struct PlaylistEntry {
+    title: Option<String>,
     webpage_url: Option<String>,
     url: Option<String>,
+    thumbnail: Option<String>,
+    #[serde(default)]
+    thumbnails: Vec<Thumbnail>,
     #[serde(default)]
     formats: Vec<PlaylistFormat>,
 }
 
 #[derive(Deserialize)]
+struct Thumbnail {
+    url: Option<String>,
+}
+
+#[derive(Deserialize)]
 struct PlaylistFormat {
     url: Option<String>,
+}
+
+#[derive(Default)]
+struct DownloadItem<'a> {
+    title: &'a str,
+    heights: &'a [u32],
+    languages: &'a [String],
+    has_thumbnail: bool,
+}
+
+impl<'a> From<&'a DownloadInfo> for DownloadItem<'a> {
+    fn from(info: &'a DownloadInfo) -> Self {
+        Self {
+            title: &info.title,
+            heights: &info.heights,
+            languages: &info.subtitle_languages,
+            has_thumbnail: info.has_thumbnail,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Deserialize)]
@@ -89,7 +176,7 @@ pub enum DownloadQuality {
 pub struct DownloadOptions {
     quality: Option<DownloadQuality>,
     language: Option<String>,
-    confirmed_count: Option<usize>,
+    name_prefix: Option<String>,
 }
 
 impl DownloadQuality {
@@ -133,6 +220,18 @@ fn validated_url(input: &str) -> Result<tauri::Url, ErrorCode> {
     Ok(url)
 }
 
+fn cover_url(thumbnail: Option<&str>, thumbnails: &[Thumbnail]) -> Option<String> {
+    thumbnail
+        .into_iter()
+        .chain(
+            thumbnails
+                .iter()
+                .rev()
+                .filter_map(|item| item.url.as_deref()),
+        )
+        .find_map(|url| validated_url(url).ok().map(|url| url.to_string()))
+}
+
 fn common_args() -> Vec<OsString> {
     let mut args: Vec<OsString> = [
         "--ignore-config",
@@ -167,16 +266,20 @@ fn inspect(url: &tauri::Url, cancelled: impl Fn() -> bool) -> Result<DownloadInf
             "--dump-single-json",
             "--skip-download",
             "--flat-playlist",
-            "--playlist-end",
-            "21",
             "--",
         ]
         .into_iter()
         .map(OsString::from),
     );
     args.push(url.as_str().into());
-    let output = run_process(&executable, &args, Duration::from_secs(45), cancelled)
-        .map_err(download_error)?;
+    let output = run_process_with_limit(
+        &executable,
+        &args,
+        Duration::from_secs(120),
+        cancelled,
+        16 * 1024 * 1024,
+    )
+    .map_err(download_error)?;
     if !output.status.success() || output.truncated {
         return Err(ErrorCode::DownloadFailed);
     }
@@ -185,12 +288,20 @@ fn inspect(url: &tauri::Url, cancelled: impl Fn() -> bool) -> Result<DownloadInf
     if info.is_live == Some(true) {
         return Err(ErrorCode::DownloadUnsupported);
     }
+    info.cover_url = cover_url(info.thumbnail.as_deref(), &info.thumbnails);
     if matches!(info.entry_type.as_deref(), Some("playlist" | "multi_video")) {
         let count = info.entries.len();
-        if count == 0 || count > 20 || info.playlist_count.is_some_and(|total| total > 20) {
+        if count == 0 {
             return Err(ErrorCode::DownloadUnsupported);
         }
         info.playlist_size = Some(count);
+        if info.cover_url.is_none() {
+            info.cover_url = info
+                .entries
+                .iter()
+                .flatten()
+                .find_map(|entry| cover_url(entry.thumbnail.as_deref(), &entry.thumbnails));
+        }
         return Ok(info);
     }
     info.heights = [1080, 720, 480]
@@ -221,12 +332,18 @@ fn inspect(url: &tauri::Url, cancelled: impl Fn() -> bool) -> Result<DownloadInf
 }
 
 #[tauri::command]
-pub async fn inspect_download(url: String) -> Result<DownloadInfo, AppError> {
+pub async fn inspect_download(
+    url: String,
+    app: tauri::AppHandle,
+) -> Result<serde_json::Value, AppError> {
     let url = validated_url(&url)?;
-    tauri::async_runtime::spawn_blocking(move || inspect(&url, || false))
-        .await
-        .map_err(|_| ErrorCode::Internal)?
-        .map_err(Into::into)
+    tauri::async_runtime::spawn_blocking(move || {
+        let info = app.state::<DownloadCache>().lookup(&url, || false)?;
+        serde_json::to_value(info.as_ref()).map_err(|_| ErrorCode::Internal)
+    })
+    .await
+    .map_err(|_| ErrorCode::Internal)?
+    .map_err(Into::into)
 }
 
 #[tauri::command]
@@ -234,16 +351,24 @@ pub async fn download_media(
     url: String,
     folder: String,
     kind: DownloadKind,
-    authorized: bool,
     options: Option<DownloadOptions>,
     progress: Option<tauri::ipc::JavaScriptChannelId>,
     webview: tauri::Webview,
 ) -> Result<DownloadReport, AppError> {
-    if !authorized {
-        return Err(ErrorCode::DownloadNotAuthorized.into());
-    }
     let url = validated_url(&url)?;
-    let options = options.unwrap_or_default();
+    let mut options = options.unwrap_or_default();
+    options.name_prefix = options
+        .name_prefix
+        .as_deref()
+        .map(str::trim)
+        .filter(|prefix| !prefix.is_empty())
+        .map(str::to_owned);
+    if let Some(prefix) = &options.name_prefix {
+        if prefix.chars().count() > 90 {
+            return Err(ErrorCode::InvalidOutputName.into());
+        }
+        with_output_extension(&format!("{prefix}.tmp"), ".tmp")?;
+    }
     let app = webview.app_handle().clone();
     let queue = app.state::<JobQueue>();
     let job = queue.register(
@@ -257,7 +382,26 @@ pub async fn download_media(
     }
     tauri::async_runtime::spawn_blocking(move || {
         let _execution = execution;
-        let result = download(&url, &folder, kind, &options, &job);
+        let result = (|| {
+            let folder = PathBuf::from(inspect_folder(Path::new(&folder))?);
+            let info = app
+                .state::<DownloadCache>()
+                .lookup(&url, || job.cancelled())?;
+            let report = download(&url, &folder, kind, &options, &job, &info)?;
+            let saved = match &report {
+                DownloadReport::Single(item) => Some(Some(folder.join(&item.file_name))),
+                DownloadReport::Playlist { files, .. } if !files.is_empty() => Some(None),
+                _ => None,
+            };
+            if let Some(file) = saved {
+                app.state::<DownloadOutputs>()
+                    .0
+                    .lock()
+                    .unwrap()
+                    .insert(job.id(), (folder, file));
+            }
+            Ok(report)
+        })();
         let (status, completed) = match &result {
             Ok(DownloadReport::Playlist { cancelled, .. }) if *cancelled > 0 => {
                 (JobStatus::Cancelled, 0)
@@ -276,38 +420,30 @@ pub async fn download_media(
 
 fn download(
     url: &tauri::Url,
-    folder: &str,
+    folder: &Path,
     kind: DownloadKind,
     options: &DownloadOptions,
-    job: &crate::jobs::Job,
+    job: &Job,
+    info: &DownloadInfo,
 ) -> Result<DownloadReport, ErrorCode> {
-    let info = inspect(url, || job.cancelled())?;
-    let folder = inspect_folder(Path::new(folder))?;
-    let folder = Path::new(&folder);
     let Some(count) = info.playlist_size else {
-        if options.confirmed_count.is_some() {
-            return Err(ErrorCode::DownloadPlaylistConfirmation);
-        }
-        return download_one(url, folder, kind, options, &info, job, 0..99)
+        return download_one(url, folder, kind, options, info.into(), job, 0..99)
             .map(DownloadReport::Single);
     };
-    if options.confirmed_count != Some(count) {
-        return Err(ErrorCode::DownloadPlaylistConfirmation);
-    }
     if !matches!(kind, DownloadKind::Video | DownloadKind::Audio) {
         return Err(ErrorCode::DownloadUnsupported);
     }
     let mut files = Vec::new();
     let mut failed = 0;
-    for (index, entry) in info.entries.into_iter().enumerate() {
-        if job.cancelled() {
+    for (index, entry) in info.entries.iter().enumerate() {
+        if wait_for_download(job).is_err() {
             break;
         }
         let range = (index * 99 / count)..((index + 1) * 99 / count);
         let end = range.end;
         let result = (|| {
-            let entry = entry.ok_or(ErrorCode::DownloadFailed)?;
-            let link = [entry.url.as_deref(), entry.webpage_url.as_deref()]
+            let entry = entry.as_ref().ok_or(ErrorCode::DownloadFailed)?;
+            let link = [entry.webpage_url.as_deref(), entry.url.as_deref()]
                 .into_iter()
                 .flatten()
                 .chain(
@@ -319,16 +455,21 @@ fn download(
                 .filter_map(|candidate| validated_url(candidate).ok())
                 .find(|candidate| candidate != url)
                 .ok_or(ErrorCode::DownloadFailed)?;
-            let item = inspect(&link, || job.cancelled())?;
-            if item.playlist_size.is_some() {
-                return Err(ErrorCode::DownloadUnsupported);
-            }
             download_one(
                 &link,
                 folder,
                 kind,
-                &DownloadOptions::default(),
-                &item,
+                &DownloadOptions {
+                    name_prefix: options
+                        .name_prefix
+                        .as_ref()
+                        .map(|prefix| format!("{prefix} {}", index + 1)),
+                    ..DownloadOptions::default()
+                },
+                DownloadItem {
+                    title: entry.title.as_deref().unwrap_or(&info.title),
+                    ..DownloadItem::default()
+                },
                 job,
                 range,
             )
@@ -353,8 +494,8 @@ fn download_one(
     folder: &Path,
     kind: DownloadKind,
     options: &DownloadOptions,
-    info: &DownloadInfo,
-    job: &crate::jobs::Job,
+    info: DownloadItem<'_>,
+    job: &Job,
     range: Range<usize>,
 ) -> Result<DownloadResult, ErrorCode> {
     let executable = locate("yt-dlp").ok_or(ErrorCode::DownloaderMissing)?;
@@ -366,12 +507,15 @@ fn download_one(
             "--playlist-items",
             "1",
             "--no-simulate",
+            "--continue",
+            "--match-filter",
+            "!is_live",
             "--newline",
             "--progress",
             "--progress-delta",
             "0.25",
             "--progress-template",
-            "download:LPSTK:%(progress._percent_str)s",
+            "download:LPSTK:%(progress._percent_str)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.total_bytes_estimate)s",
             "--ffmpeg-location",
         ]
         .into_iter()
@@ -435,7 +579,7 @@ fn download_one(
             let language = options
                 .language
                 .as_deref()
-                .filter(|language| info.subtitle_languages.iter().any(|item| item == language))
+                .filter(|language| info.languages.iter().any(|item| item == language))
                 .ok_or(ErrorCode::DownloadExtraUnavailable)?;
             args.extend(
                 [
@@ -457,38 +601,47 @@ fn download_one(
     };
     args.push("--".into());
     args.push(url.as_str().into());
-    let mut pending = Vec::new();
-    let output = run_process_streaming(
-        &executable,
-        &args,
-        Duration::from_secs(3600),
-        || job.cancelled(),
-        |bytes| {
-            for &byte in bytes {
-                if byte == b'\n' {
-                    if let Some(value) = std::str::from_utf8(&pending)
-                        .ok()
-                        .and_then(|line| line.strip_prefix("LPSTK:"))
-                        .and_then(|value| value.trim().trim_end_matches('%').parse::<f64>().ok())
-                        .filter(|value| value.is_finite())
-                    {
-                        job.publish(
-                            range.start
-                                + ((range.end - range.start) as f64 * value.clamp(0.0, 100.0)
-                                    / 100.0) as usize,
-                        );
-                    }
-                    pending.clear();
-                } else if pending.len() < 256 {
-                    pending.push(byte);
+    loop {
+        wait_for_download(job)?;
+        let interrupted = Cell::new(false);
+        let mut pending = Vec::new();
+        let output = run_process_streaming(
+            &executable,
+            &args,
+            Duration::from_secs(3600),
+            || {
+                let paused = job.paused();
+                if paused {
+                    interrupted.set(true);
                 }
-            }
-        },
-    )
-    .map_err(download_error)?;
-    if !output.status.success() {
-        return Err(ErrorCode::DownloadFailed);
+                paused || job.cancelled()
+            },
+            |bytes| {
+                for &byte in bytes {
+                    if byte == b'\n' {
+                        if let Some((value, transfer)) = parse_transfer(&pending) {
+                            job.publish_transfer(
+                                range.start
+                                    + ((range.end - range.start) as f64 * value.clamp(0.0, 100.0)
+                                        / 100.0) as usize,
+                                transfer,
+                            );
+                        }
+                        pending.clear();
+                    } else if pending.len() < 256 {
+                        pending.push(byte);
+                    }
+                }
+            },
+        );
+        match output {
+            Ok(output) if output.status.success() => break,
+            Ok(_) => return Err(ErrorCode::DownloadFailed),
+            Err(ProcessError::Cancelled) if interrupted.get() && !job.cancelled() => continue,
+            Err(error) => return Err(download_error(error)),
+        }
     }
+    wait_for_download(job)?;
     let staged = stage.path().join(staged_name);
     let bytes = match kind {
         DownloadKind::Video => probe_media(&staged, StreamKind::Video).map(|item| item.size_bytes),
@@ -502,20 +655,7 @@ fn download_one(
     .map_err(|_| ErrorCode::OutputWriteFailed)?;
     let mut temporary =
         tempfile::TempPath::try_from_path(staged).map_err(|_| ErrorCode::OutputWriteFailed)?;
-    let title: String = info
-        .title
-        .chars()
-        .filter(|ch| !ch.is_control() && !"<>:\"/\\|?*".contains(*ch))
-        .take(90)
-        .collect();
-    let title = title.trim_matches([' ', '.']);
-    let name = with_output_extension(&format!("{title}.tmp"), extension)
-        .unwrap_or_else(|_| format!("download{extension}"));
-    let preferred = if title.is_empty() {
-        format!("download{extension}")
-    } else {
-        name
-    };
+    let preferred = download_file_name(info.title, options.name_prefix.as_deref(), extension)?;
     let mut reserved = HashSet::new();
     let file_name = loop {
         if job.cancelled() {
@@ -529,6 +669,61 @@ fn download_one(
         }
     };
     Ok(DownloadResult { file_name, bytes })
+}
+
+fn wait_for_download(job: &Job) -> Result<(), ErrorCode> {
+    if job.paused() {
+        job.publish(0);
+        while job.paused() {
+            std::thread::sleep(Duration::from_millis(100));
+        }
+        job.publish(0);
+    }
+    if job.cancelled() {
+        return Err(ErrorCode::JobCancelled);
+    }
+    Ok(())
+}
+
+fn parse_transfer(line: &[u8]) -> Option<(f64, Option<DownloadTransfer>)> {
+    let mut fields = std::str::from_utf8(line)
+        .ok()?
+        .trim_end()
+        .strip_prefix("LPSTK:")?
+        .split('|');
+    let percent: f64 = fields.next()?.trim().trim_end_matches('%').parse().ok()?;
+    let downloaded = fields.next().and_then(|value| value.parse().ok());
+    let total = fields.next().and_then(|value| value.parse().ok());
+    let estimated = fields.next().and_then(|value| value.parse().ok());
+    percent.is_finite().then_some((
+        percent,
+        downloaded.map(|downloaded_bytes| DownloadTransfer {
+            downloaded_bytes,
+            total_bytes: total.or(estimated),
+        }),
+    ))
+}
+
+fn download_file_name(
+    title: &str,
+    prefix: Option<&str>,
+    extension: &str,
+) -> Result<String, ErrorCode> {
+    if let Some(prefix) = prefix {
+        return with_output_extension(&format!("{prefix}.tmp"), extension);
+    }
+    let title: String = title
+        .chars()
+        .filter(|ch| !ch.is_control() && !"<>:\"/\\|?*".contains(*ch))
+        .take(90)
+        .collect();
+    let title = title.trim_matches([' ', '.']);
+    Ok(if title.is_empty() {
+        format!("download{extension}")
+    } else {
+        with_output_extension(&format!("{title}.tmp"), extension)
+            .unwrap_or_else(|_| format!("download{extension}"))
+    })
 }
 
 fn validate_webvtt(path: &Path) -> Result<u64, ErrorCode> {
@@ -567,6 +762,22 @@ fn download_error(error: ProcessError) -> ErrorCode {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn names_downloads_with_the_requested_prefix_and_extension() {
+        assert_eq!(
+            download_file_name("Título", Some("Jazz Wall 23"), ".mp3").unwrap(),
+            "Jazz Wall 23.mp3"
+        );
+        assert_eq!(
+            download_file_name("Título", None, ".mp4").unwrap(),
+            "Título.mp4"
+        );
+        assert_eq!(
+            download_file_name("Título", Some("a/b"), ".mp3"),
+            Err(ErrorCode::InvalidOutputName)
+        );
+    }
 
     #[test]
     fn accepts_http_links_and_rejects_credentials_and_local_file_urls() {

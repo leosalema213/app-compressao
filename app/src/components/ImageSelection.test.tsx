@@ -24,6 +24,64 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+test("gera uma prévia sem pasta e remove a comparação quando os ajustes mudam", async () => {
+  const preview = vi.fn(() => ({
+    inputBytes: 2097152,
+    outputBytes: 524288,
+    width: 320,
+    height: 200,
+    original: "data:image/png;base64,original",
+    output: "data:image/png;base64,output",
+  }));
+  mockIPC((command, args) => {
+    if (command === "plugin:dialog|open") return ["foto.png"];
+    if (command === "inspect_images")
+      return inspection.map((item) =>
+        item.media
+          ? { ...item, media: { ...item.media, dimensions: [640, 400] } }
+          : item,
+      );
+    expect(command).toBe("preview_image_conversion");
+    expect(args).toEqual({
+      path: inspection[0].media?.path,
+      format: "jpeg",
+      jpegQuality: 80,
+      resize: { percent: 50 },
+    });
+    return preview();
+  });
+
+  render(<ImageSelection />);
+  fireEvent.click(screen.getByRole("button", { name: "Selecionar imagens" }));
+  await screen.findByText("foto.png");
+  fireEvent.change(screen.getByRole("combobox", { name: "Formato de saída" }), {
+    target: { value: "jpeg" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Redimensionar" }));
+  fireEvent.change(screen.getByRole("combobox", { name: "Modo" }), {
+    target: { value: "percent" },
+  });
+  const scale = screen.getByRole("textbox", { name: "Escala (%)" });
+  const slider = screen.getByRole("slider", { name: "Ajustar escala" });
+  fireEvent.change(scale, { target: { value: "20" } });
+  expect(screen.getByText(/128 × 80 px previstos/)).toBeTruthy();
+  fireEvent.change(slider, { target: { value: "50" } });
+  expect(screen.getByText(/320 × 200 px previstos/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Prévia" }));
+  fireEvent.click(screen.getByRole("button", { name: "Gerar prévia" }));
+  expect(await screen.findByText("Original · 2 MB")).toBeTruthy();
+  expect(screen.getByText("Saída · 512 KB")).toBeTruthy();
+  expect(screen.getByRole("img", { name: "Imagem processada" })).toBeTruthy();
+  expect(preview).toHaveBeenCalledTimes(1);
+
+  fireEvent.click(screen.getByRole("button", { name: "Formato" }));
+  fireEvent.change(screen.getByRole("slider", { name: "Qualidade JPEG" }), {
+    target: { value: "65" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Prévia" }));
+  expect(screen.queryByText("Saída · 512 KB")).toBeNull();
+});
+
 test("lista arquivos aceitos e rejeitados e permite remover ou limpar itens", async () => {
   mockIPC((command) => {
     if (command === "plugin:dialog|open") return ["foto.png", "outra.png"];
@@ -249,6 +307,7 @@ test("valida os limites e apresenta as dimensões devolvidas pelo Rust", async (
   fireEvent.click(screen.getByRole("button", { name: "Escolher pasta" }));
   await screen.findByText(folder);
 
+  fireEvent.click(screen.getByRole("button", { name: "Redimensionar" }));
   const width = screen.getByRole("textbox", { name: "Largura máxima (px)" });
   fireEvent.change(width, { target: { value: "1.5" } });
   const resize = screen.getByRole<HTMLButtonElement>("button", {

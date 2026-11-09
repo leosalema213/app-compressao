@@ -39,6 +39,27 @@ pub fn run_process_streaming(
     cancelled: impl Fn() -> bool,
     on_stdout: impl FnMut(&[u8]) + Send,
 ) -> Result<ProcessOutput, ProcessError> {
+    run_process_inner(executable, args, timeout, cancelled, on_stdout, MAX_CAPTURE)
+}
+
+pub fn run_process_with_limit(
+    executable: &Path,
+    args: &[OsString],
+    timeout: Duration,
+    cancelled: impl Fn() -> bool,
+    stdout_limit: usize,
+) -> Result<ProcessOutput, ProcessError> {
+    run_process_inner(executable, args, timeout, cancelled, |_| {}, stdout_limit)
+}
+
+fn run_process_inner(
+    executable: &Path,
+    args: &[OsString],
+    timeout: Duration,
+    cancelled: impl Fn() -> bool,
+    on_stdout: impl FnMut(&[u8]) + Send,
+    stdout_limit: usize,
+) -> Result<ProcessOutput, ProcessError> {
     if !executable.is_absolute() {
         return Err(ProcessError::Unavailable);
     }
@@ -69,8 +90,8 @@ pub fn run_process_streaming(
     let stdout = child.stdout.take().expect("stdout configured as a pipe");
     let stderr = child.stderr.take().expect("stderr configured as a pipe");
     thread::scope(|scope| {
-        let stdout = scope.spawn(|| capture(stdout, on_stdout));
-        let stderr = scope.spawn(|| capture(stderr, |_| {}));
+        let stdout = scope.spawn(|| capture(stdout, on_stdout, stdout_limit));
+        let stderr = scope.spawn(|| capture(stderr, |_| {}, MAX_CAPTURE));
         let started = Instant::now();
         let outcome = loop {
             match child.try_wait() {
@@ -110,7 +131,11 @@ pub fn run_process_streaming(
     })
 }
 
-fn capture(mut pipe: impl Read, mut on_data: impl FnMut(&[u8])) -> io::Result<(Vec<u8>, bool)> {
+fn capture(
+    mut pipe: impl Read,
+    mut on_data: impl FnMut(&[u8]),
+    limit: usize,
+) -> io::Result<(Vec<u8>, bool)> {
     let mut output = Vec::new();
     let mut buffer = [0; 8192];
     let mut truncated = false;
@@ -120,7 +145,7 @@ fn capture(mut pipe: impl Read, mut on_data: impl FnMut(&[u8])) -> io::Result<(V
             return Ok((output, truncated));
         }
         on_data(&buffer[..read]);
-        let remaining = (MAX_CAPTURE - output.len()).min(read);
+        let remaining = (limit - output.len()).min(read);
         output.extend_from_slice(&buffer[..remaining]);
         truncated |= remaining < read;
     }

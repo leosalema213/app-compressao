@@ -18,7 +18,17 @@ pub(crate) fn locate(name: &str) -> Option<PathBuf> {
     } else {
         name.to_owned()
     };
-    env::split_paths(&env::var_os("PATH")?)
+    let search_path = env::var_os("PATH").unwrap_or_default();
+    let winget_links = env::var_os("LOCALAPPDATA")
+        .filter(|_| cfg!(windows))
+        .map(|path| {
+            PathBuf::from(path)
+                .join("Microsoft")
+                .join("WinGet")
+                .join("Links")
+        });
+    env::split_paths(&search_path)
+        .chain(winget_links)
         .filter(|path| path.is_absolute())
         .map(|path| path.join(&executable))
         .find(|path| path.is_file())
