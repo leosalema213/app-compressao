@@ -18,8 +18,9 @@ $builds = @(Get-ChildItem -LiteralPath $release -Directory | Where-Object {
 } | ForEach-Object {
     Assert-OwnedDirectory $_.FullName
     $directory = $_
-    $installer = "LpsToolkit_$($directory.Name)_x64-setup.exe"
-    $artifacts = @('LpsToolkit.exe', $installer, "$installer.sig", "$installer.sha256", 'latest.json') |
+    $names = @("Pacton_$($directory.Name)_x64-setup.exe", "LpsToolkit_$($directory.Name)_x64-setup.exe")
+    $files = @('Pacton.exe', 'LpsToolkit.exe', 'latest.json') + @($names | ForEach-Object { $_; "$_.sig"; "$_.sha256" })
+    $artifacts = $files |
         ForEach-Object { Join-Path $directory.FullName $_ } |
         Where-Object { Test-Path -LiteralPath $_ -PathType Leaf }
     if ($artifacts) {

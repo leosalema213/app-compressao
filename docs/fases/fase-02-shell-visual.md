@@ -39,6 +39,8 @@ As rotas por hash usam links nativos e o histórico da janela, com uma tela de r
 
 ## Bloco 02.2 — Tokens e componentes-base
 
+Na revisão Pacton, o cabeçalho incorpora minimizar, maximizar/restaurar e fechar na mesma barra de Tema e Downloads. A janela usa decoração personalizada e região de arraste. A referência segue o Organon, com sidebar de 200 px, marca com versão, navegação de 12 px e pesos 500/600, cabeçalho de 48 px e breadcrumb com seta de 13 px.
+
 - Definir cores semânticas, tipografia, espaços, bordas e foco.
 - Implementar AppShell, Sidebar, Topbar, PageHeader e EmptyState.
 - Reutilizar componentes do shadcn/ui sem criar abstrações prematuras.

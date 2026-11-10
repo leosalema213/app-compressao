@@ -1,9 +1,13 @@
-import type { ReactNode } from "react";
-import { HardDrive, Layers3 } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { isTauri } from "@tauri-apps/api/core";
+import { ChevronRight, HardDrive } from "lucide-react";
+import { getAppDiagnostic } from "@/diagnostic";
+import { version } from "../../package.json";
 import { pages, type Page } from "@/navigation";
 import { AppearanceControls } from "./AppearanceControls";
 import { DownloadCenter } from "./DownloadCenter";
 import { AppUpdatePrompt } from "./AppUpdates";
+import { dragWindow, WindowControls } from "./WindowControls";
 
 export function AppShell({
   page,
@@ -12,16 +16,45 @@ export function AppShell({
   page: Page | undefined;
   children: ReactNode;
 }) {
+  const [appVersion, setAppVersion] = useState(version);
+  useEffect(() => {
+    if (!isTauri()) return;
+    let active = true;
+    void getAppDiagnostic()
+      .then(({ version }) => {
+        if (active) setAppVersion(version);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <a className="brand" href="#/" aria-label="LpsToolkit — Início">
-          <span className="brand-mark">
-            <Layers3 aria-hidden="true" />
-          </span>
-          <span>
-            LpsToolkit <small>FERRAMENTAS DE MÍDIA</small>
-          </span>
+        <a className="brand" href="#/" aria-label="Pacton — Início">
+          <svg
+            className="brand-wordmark"
+            viewBox="0 0 230 60"
+            role="img"
+            aria-label="Pacton"
+          >
+            <image href="/branding/pacton-symbol.svg" width="60" height="60" />
+            <text
+              x="72"
+              y="43"
+              fill="currentColor"
+              fontSize="42"
+              fontWeight="650"
+              letterSpacing="-2"
+              textLength="152"
+              lengthAdjust="spacingAndGlyphs"
+            >
+              pacton
+            </text>
+          </svg>
+          <small className="app-version">v{appVersion}</small>
         </a>
         <nav aria-label="Navegação principal">
           <p className="sidebar-label">Área de trabalho</p>
@@ -44,14 +77,16 @@ export function AppShell({
         </p>
       </aside>
       <div className="workspace">
-        <header className="topbar">
-          <span>
-            Ferramentas <span aria-hidden="true">/</span>{" "}
+        <header className="topbar" onMouseDown={dragWindow}>
+          <div className="breadcrumb" aria-label="Localização">
+            <span>Meu espaço</span>
+            <ChevronRight size={13} aria-hidden="true" />
             <strong>{page?.label ?? "Página desconhecida"}</strong>
-          </span>
+          </div>
           <div className="topbar-controls">
             <DownloadCenter />
             <AppearanceControls />
+            <WindowControls />
           </div>
         </header>
         <main className="workspace-content">{children}</main>

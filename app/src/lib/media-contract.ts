@@ -59,8 +59,7 @@ const errorMessages = {
   download_extra_unavailable:
     "O link não oferece a miniatura ou a legenda solicitada.",
   internal: "Não foi possível concluir a operação. Tente novamente.",
-  invalid_settings_backup:
-    "Este arquivo não é um backup compatível do LpsToolkit.",
+  invalid_settings_backup: "Este arquivo não é um backup compatível do Pacton.",
   update_check_failed:
     "Não foi possível verificar as atualizações. Confira sua conexão e tente novamente.",
   update_channel_unavailable:

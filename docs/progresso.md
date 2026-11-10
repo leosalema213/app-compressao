@@ -4,9 +4,9 @@ Atualizado em: 2026-11-09
 
 ## Estado atual
 
-- Status geral: 0.1.1 publicada com backup e atualização integrada. Canal público verificado.
-- Próxima fase: [`Fase 09 — Distribuição Windows`](fases/fase-09-distribuicao.md), entrega do atualizador.
-- Próximo bloco: validar aplicação e reinício pela atualização integrada em uma instalação real.
+- Status geral: Pacton 0.1.2 aprovado e preparado para publicação.
+- Próxima fase: [`Fase 02 — Shell visual`](fases/fase-02-shell-visual.md), validação da revisão Pacton.
+- Próximo bloco: validar a aplicação e o reinício pela atualização integrada em uma instalação real.
 - Código do aplicativo: imagens em lote, fila, vídeo MP4, áudio MP3, Downloader, preferências com abas, backup JSON e atualização integrada.
 
 ## Decisões confirmadas
@@ -19,7 +19,7 @@ Atualizado em: 2026-11-09
 - [x] A troca para libvips depende de critérios objetivos, não de preferência.
 - [x] A execução segue em blocos pequenos e documentados. O usuário dispensou as pausas para checkpoints didáticos e delegou a continuidade da implementação.
 - [x] O usuário tem base frontend júnior/pleno e está começando Rust/terminal.
-- [x] Nome do aplicativo: LpsToolkit; identificador: `com.lpstoolkit.app`.
+- [x] Nome do aplicativo: Pacton, escolhido pelo usuário; identificador persistente: `com.lpstoolkit.app`.
 - [x] Organon é a referência visual e de experiência para instalação, atualização e fluxo de previews/releases. A adaptação segue o [roadmap](02-roadmap.md) e a stack Tauri.
 - [x] Manter no máximo dois builds de instalador local, conforme `AGENTS.md`, e prototipar o seletor de cores no cabeçalho na Fase 02.
 - [x] Se o nome de saída estiver ocupado, renomear automaticamente com sufixo numérico e preservar o arquivo existente.
@@ -82,6 +82,8 @@ Atualizado em: 2026-11-09
 | 2026-11-09 | Entrega 0.1.0 | Usuário validou o lote e autorizou subir. 16 testes React e formatação Rust passaram. Build NSIS x64 em português e abertura da janela final verificados. SHA-256 `84219319053a8c01ff94a84ba58792d439d9be9102b2c6ebba9a87990e76c9fc` | Versão final preparada para [GitHub](https://github.com/leosalema213/app-compressao/releases/tag/v0.1.0). Atualização manual e ferramentas externas instaladas separadamente |
 | 2026-11-09 | Backup e atualização integrada | 18 testes React, 31 Rust, lint, Clippy e build passaram. A cópia isolada mostrou o aviso automático, rejeitou assinatura inválida e baixou um instalador real com assinatura válida. Backup exportado/importado pelo Rust e abas conferidas no WebView2. NSIS assinado gerado em teste | Preview `0.1.1-preview.1`. Atalho conferido. Canal estável aguardando publicação do manifesto. Instalação/reinício real pendentes |
 | 2026-11-09 | Entrega 0.1.1 | Publicação autorizada pelo usuário. Instalador, assinatura, checksum e manifesto publicados. O preview consultou o canal público, ofereceu a 0.1.1 e baixou o instalador com assinatura válida. SHA-256 `4c6d349a6141e07d548049f870142d6848b9fd97b3a81753e07c8e6486ab1586` | [Release 0.1.1](https://github.com/leosalema213/app-compressao/releases/tag/v0.1.1). A 0.1.0 recebe esta versão manualmente uma vez. Aplicação/reinício real pendentes |
+| 2026-11-09 | Identidade Pacton e shell | 18 testes React, 32 Rust, lint, Clippy e build passaram. Preview abriu como Pacton 0.1.2-preview.1. Barra nativa ausente, sidebar de 200 px, cabeçalho de 48 px, logo e versão conferidos. Layout de 360 px e botões maximizar, restaurar, minimizar e fechar testados no WebView2 | Atalho `Testar Pacton.lnk`. Retidas a 0.1.1 e a 0.1.2-preview.1. Novo nome e símbolos aplicados |
+| 2026-11-09 | Entrega Pacton 0.1.2 | Publicação autorizada. Instalador final, assinatura, checksum, manifesto e alias para clientes 0.1.1 gerados | Release final preparada para o GitHub |
 
 ## Decisões pendentes no momento adequado
 

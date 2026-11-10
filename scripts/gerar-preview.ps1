@@ -46,20 +46,30 @@ try {
 $binary = Get-Item -LiteralPath (Join-Path $env:CARGO_TARGET_DIR 'release\lps-toolkit.exe')
 if ($binary.Length -eq 0) { throw 'O executável compilado está vazio.' }
 New-Item -ItemType Directory -Path $destination | Out-Null
-$exe = Join-Path $destination 'LpsToolkit.exe'
+$exe = Join-Path $destination 'Pacton.exe'
 Copy-Item -LiteralPath $binary.FullName -Destination $exe
 if ((Get-FileHash -LiteralPath $exe).Hash -ne (Get-FileHash -LiteralPath $binary.FullName).Hash) {
     throw 'A cópia do executável não passou na verificação de integridade.'
 }
 
-$shortcutPath = Join-Path $project 'Testar LpsToolkit.lnk'
+$shortcutPath = Join-Path $project 'Testar Pacton.lnk'
 if (Test-Path -LiteralPath $shortcutPath) { Assert-NoLink (Get-Item -LiteralPath $shortcutPath) }
 $shell = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut($shortcutPath)
 $shortcut.TargetPath = $exe
 $shortcut.WorkingDirectory = $destination
-$shortcut.Description = "LpsToolkit $version"
+$shortcut.Description = "Pacton $version"
 $shortcut.Save()
+
+$oldShortcut = Join-Path $project 'Testar LpsToolkit.lnk'
+if (Test-Path -LiteralPath $oldShortcut) {
+    Assert-NoLink (Get-Item -LiteralPath $oldShortcut)
+    $oldTarget = $shell.CreateShortcut($oldShortcut).TargetPath
+    if ($oldTarget.StartsWith(($release + '\'), [StringComparison]::OrdinalIgnoreCase) -and
+        $oldTarget.EndsWith('\LpsToolkit.exe', [StringComparison]::OrdinalIgnoreCase)) {
+        Remove-Item -LiteralPath $oldShortcut
+    }
+}
 
 & (Join-Path $PSScriptRoot 'prune-releases.ps1') -CurrentVersion $version
 

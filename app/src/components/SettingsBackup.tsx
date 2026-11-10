@@ -14,7 +14,7 @@ export function SettingsBackup() {
   const [pending, setPending] = useState<Settings | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const filters = [{ name: "Backup do LpsToolkit", extensions: ["json"] }];
+  const filters = [{ name: "Backup do Pacton", extensions: ["json"] }];
 
   async function run(action: () => Promise<void>, mode: typeof busy) {
     setBusy(mode);
@@ -33,7 +33,7 @@ export function SettingsBackup() {
     return run(async () => {
       const path = await save({
         title: "Exportar backup",
-        defaultPath: "LpsToolkit-backup.json",
+        defaultPath: "Pacton-backup.json",
         filters,
       });
       if (!path) return;

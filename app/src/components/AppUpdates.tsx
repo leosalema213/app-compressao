@@ -18,7 +18,7 @@ export function UpdateSettings() {
     idle: "Novas versões são verificadas ao abrir o aplicativo.",
     checking: "Verificando atualizações…",
     current: "Você está na versão mais recente.",
-    available: `LpsToolkit ${state.version} está disponível.`,
+    available: `Pacton ${state.version} está disponível.`,
     downloading: "Baixando atualização…",
     ready: "A atualização está pronta para instalar.",
     installing: "Aplicando atualização… O aplicativo será reaberto.",
@@ -28,7 +28,7 @@ export function UpdateSettings() {
     <div className="settings-section">
       <h2>Versão e atualizações</h2>
       <p>
-        <strong>LpsToolkit {state.currentVersion || "—"}</strong>
+        <strong>Pacton {state.currentVersion || "—"}</strong>
       </p>
       <p role="status">{messages[state.status]}</p>
       {state.error && (
@@ -102,13 +102,13 @@ export function AppUpdatePrompt() {
       </span>
       <h2 id="app-update-title">
         {state.status === "installing"
-          ? "Atualizando o LpsToolkit"
+          ? "Atualizando o Pacton"
           : ready
             ? "Pronto para atualizar"
             : "Nova versão disponível"}
       </h2>
       <p>
-        LpsToolkit {state.currentVersion} → {state.version}
+        Pacton {state.currentVersion} → {state.version}
       </p>
       <p>
         {state.status === "installing"

@@ -31,11 +31,10 @@ pub struct UpdateProgress {
     total: Option<u64>,
 }
 
-fn valid_release(update: &Update) -> bool {
-    let version = &update.version;
-    !version.contains('-') && update.download_url.as_str() == format!(
-        "https://github.com/leosalema213/app-compressao/releases/download/v{version}/LpsToolkit_{version}_x64-setup.exe"
-    )
+fn valid_release_url(version: &str, url: &str) -> bool {
+    !version.contains('-') && ["Pacton", "LpsToolkit"].iter().any(|name| url == format!(
+        "https://github.com/leosalema213/app-compressao/releases/download/v{version}/{name}_{version}_x64-setup.exe"
+    ))
 }
 
 #[tauri::command]
@@ -69,7 +68,7 @@ pub async fn check_app_update(
         })?;
     if pending
         .as_ref()
-        .is_some_and(|update| !valid_release(update))
+        .is_some_and(|update| !valid_release_url(&update.version, update.download_url.as_str()))
     {
         return Err(ErrorCode::UpdateCheckFailed.into());
     }
@@ -128,4 +127,34 @@ pub fn install_app_update(
     #[cfg(not(windows))]
     app.restart();
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::valid_release_url;
+
+    #[test]
+    fn accepts_pacton_and_legacy_assets_only_from_the_release_repository() {
+        let root = "https://github.com/leosalema213/app-compressao/releases/download/v0.1.2";
+        assert!(valid_release_url(
+            "0.1.2",
+            &format!("{root}/Pacton_0.1.2_x64-setup.exe")
+        ));
+        assert!(valid_release_url(
+            "0.1.2",
+            &format!("{root}/LpsToolkit_0.1.2_x64-setup.exe")
+        ));
+        assert!(!valid_release_url(
+            "0.1.2",
+            &format!("{root}/Pacton_0.1.1_x64-setup.exe")
+        ));
+        assert!(!valid_release_url(
+            "0.1.2",
+            "https://example.com/Pacton_0.1.2_x64-setup.exe"
+        ));
+        assert!(!valid_release_url(
+            "0.1.2-preview.1",
+            &format!("{root}/Pacton_0.1.2_x64-setup.exe")
+        ));
+    }
 }

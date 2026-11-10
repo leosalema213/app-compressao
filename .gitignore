@@ -8,6 +8,7 @@ app/src-tauri/target/
 app/src-tauri/binaries/
 /release/
 /Testar LpsToolkit.lnk
+/Testar Pacton.lnk
 
 # Configurações e logs locais
 .env

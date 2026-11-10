@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "LpsToolkit",
-  "version": "0.1.1",
+  "productName": "Pacton",
+  "version": "0.1.2",
   "identifier": "com.lpstoolkit.app",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -12,7 +12,8 @@
   "app": {
     "windows": [
       {
-        "title": "LpsToolkit",
+        "title": "Pacton",
+        "decorations": false,
         "width": 800,
         "height": 600,
         "minWidth": 360,
@@ -44,7 +45,9 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEUxNjI0REEyRTI4RDNGQ0UKUldUT1A0M2lvazFpNGZHRzJOZ3J0UTRINW16RGNyNTZNOGpha1NndU1aQXBwYy8vTEZIMURNU0IK",
-      "endpoints": ["https://github.com/leosalema213/app-compressao/releases/latest/download/latest.json"],
+      "endpoints": [
+        "https://github.com/leosalema213/app-compressao/releases/latest/download/latest.json"
+      ],
       "windows": { "installMode": "passive" }
     }
   }

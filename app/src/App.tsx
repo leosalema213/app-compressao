@@ -30,7 +30,7 @@ function Diagnostic() {
       setDiagnostic(await getAppDiagnostic());
     } catch {
       setError(
-        "Não foi possível consultar a versão. Abra o LpsToolkit pelo aplicativo desktop e tente novamente.",
+        "Não foi possível consultar a versão. Abra o Pacton pelo aplicativo desktop e tente novamente.",
       );
     } finally {
       setLoading(false);
@@ -53,7 +53,7 @@ function Diagnostic() {
   return (
     <section className="surface diagnostic" aria-labelledby="diagnostic-title">
       <h2 id="diagnostic-title">Diagnóstico</h2>
-      <p>Confira a versão instalada do LpsToolkit.</p>
+      <p>Confira a versão instalada do Pacton.</p>
       <Button
         type="button"
         className="h-8 px-3 text-xs"
@@ -102,7 +102,7 @@ function App() {
         title={page?.label ?? "Página não encontrada"}
         description={
           page?.description ??
-          "Esse endereço não corresponde a uma tela do LpsToolkit."
+          "Esse endereço não corresponde a uma tela do Pacton."
         }
       />
       {!page ? (

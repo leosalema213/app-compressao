@@ -49,7 +49,7 @@ struct Backup {
 
 impl Backup {
     fn validate(&self) -> Result<(), ErrorCode> {
-        if self.application != "LpsToolkit"
+        if !matches!(self.application.as_str(), "Pacton" | "LpsToolkit")
             || self.schema_version != 1
             || self.settings.version != 1
             || self.settings.output_folder.len() > 32768
@@ -62,7 +62,7 @@ impl Backup {
 
 fn write_backup(path: &Path, settings: SavedSettings) -> Result<(), ErrorCode> {
     let backup = Backup {
-        application: "LpsToolkit".into(),
+        application: "Pacton".into(),
         schema_version: 1,
         settings,
     };
@@ -145,6 +145,10 @@ mod tests {
         );
         let valid: serde_json::Value =
             serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        let mut legacy = valid.clone();
+        legacy["application"] = serde_json::json!("LpsToolkit");
+        std::fs::write(&path, serde_json::to_vec(&legacy).unwrap()).unwrap();
+        assert!(read_backup(&path).is_ok());
         for changes in [
             serde_json::json!({ "application": "other" }),
             serde_json::json!({ "schemaVersion": 2 }),

@@ -1,6 +1,6 @@
 [package]
 name = "lps-toolkit"
-version = "0.1.1"
+version = "0.1.2"
 description = "Aplicativo desktop local para processamento de mídia"
 edition = "2021"
 

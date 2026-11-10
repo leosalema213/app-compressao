@@ -33,7 +33,7 @@ try {
     & npm.cmd run tauri -- build --ci --bundles nsis
     if ($LASTEXITCODE) { throw 'Falha ao compilar a release.' }
 } finally { Pop-Location }
-$name = "LpsToolkit_${version}_x64-setup.exe"
+$name = "Pacton_${version}_x64-setup.exe"
 $bundle = Join-Path $env:CARGO_TARGET_DIR 'release\bundle\nsis'
 $source = Get-Item -LiteralPath (Join-Path $bundle $name)
 $signature = (Get-Content -LiteralPath ($source.FullName + '.sig') -Raw).Trim()
@@ -47,14 +47,18 @@ if ($hash -ne (Get-FileHash -LiteralPath $source.FullName -Algorithm SHA256).Has
     throw 'Falha na verificação da cópia do instalador.'
 }
 [IO.File]::WriteAllText(($installer + '.sha256'), ($hash + '  ' + $name + [char]10), [Text.Encoding]::ASCII)
+$legacyName = "LpsToolkit_${version}_x64-setup.exe"
+Copy-Item -LiteralPath $installer -Destination (Join-Path $destination $legacyName)
+Copy-Item -LiteralPath ($installer + '.sig') -Destination (Join-Path $destination ($legacyName + '.sig'))
+[IO.File]::WriteAllText((Join-Path $destination ($legacyName + '.sha256')), ($hash + '  ' + $legacyName + [char]10), [Text.Encoding]::ASCII)
 $manifest = @{
     version = $version
-    notes = "Atualização LpsToolkit $version"
+    notes = "Atualização Pacton $version"
     pub_date = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
     platforms = @{
         'windows-x86_64' = @{
             signature = $signature
-            url = "https://github.com/leosalema213/app-compressao/releases/download/v$version/$name"
+            url = "https://github.com/leosalema213/app-compressao/releases/download/v$version/$legacyName"
         }
     }
 }

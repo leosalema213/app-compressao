@@ -1,4 +1,4 @@
-# LpsToolkit
+# Pacton
 
 Aplicativo desktop local para processamento de imagens, vídeo e áudio e para download de mídias, construído com Tauri 2, React, TypeScript e Rust.
 
@@ -6,7 +6,7 @@ O planejamento e o estado atual do projeto estão em [`docs/README.md`](docs/REA
 
 ## Preview para Windows
 
-Para testar a compilação local, abra `Testar LpsToolkit.lnk` na raiz do projeto ou execute `release/<versão>/LpsToolkit.exe`. O preview abre sem instalação e usa preferências separadas da versão instalada. Requer WebView2, normalmente presente no Windows 10/11.
+Para testar a compilação local, abra `Testar Pacton.lnk` na raiz do projeto ou execute `release/<versão>/Pacton.exe`. O preview abre sem instalação e usa preferências separadas da versão instalada. Requer WebView2, normalmente presente no Windows 10/11.
 
 Para gerar outro preview, incremente o número em `app/src-tauri/tauri.preview.conf.json` e execute `scripts/gerar-preview.ps1` no PowerShell. O script atualiza o atalho e mantém os dois previews mais recentes.
 
@@ -15,6 +15,8 @@ Em [GitHub Releases](https://github.com/leosalema213/app-compressao/releases/lat
 Configurações → Backup permite exportar e restaurar tema, cor e pasta padrão em um arquivo JSON.
 
 Para preparar uma release final com atualização integrada, execute `scripts/gerar-release.ps1` e publique juntos o instalador, `.sig`, `.sha256` e `latest.json`. A assinatura usa a chave privada em `%LOCALAPPDATA%/LpsToolkit/signing/updater.key`, fora do projeto. Guarde uma cópia segura dessa chave para continuar publicando atualizações compatíveis.
+
+Pacton é o novo nome do LpsToolkit. Backups das versões anteriores continuam aceitos. O script gera um alias do instalador com o nome anterior para manter o canal de atualização compatível com a 0.1.1.
 
 - **Imagens** — Comprima, redimensione e converta lotes de JPEG, PNG e WebP, com previsão da saída e preservação dos originais.
 - **Vídeo e áudio** — Consulte metadados, gere MP4 com perfis de compressão, converta WAV em MP3 e extraia MP3 de um vídeo. Essas funções usam FFmpeg e FFprobe disponíveis no PATH.
